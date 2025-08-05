@@ -26,9 +26,9 @@ A responsive web application similar to Quizlet, designed to help users learn fo
 
 ## Installation
 
-1. **Clone the repository** (if not already done):
+1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/dmitry/MyQuiz.git
    cd MyQuiz
    ```
 
@@ -189,10 +189,48 @@ The application is fully responsive and optimized for:
 4. Test thoroughly
 5. Submit a pull request
 
+## Deployment
+
+### GitHub Pages (Recommended)
+
+The application is automatically deployed to GitHub Pages when you push to the main branch.
+
+1. **Push your changes**:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+
+2. **Access your deployed app**:
+   - Go to: `https://dmitry.github.io/MyQuiz`
+   - The app will be available after GitHub Actions completes the deployment
+
+### Manual Deployment
+
+You can also deploy manually using the provided script:
+
+```bash
+./deploy.sh
+```
+
+### Local Development
+
+For local development, use:
+```bash
+npm run dev
+```
+
+This starts both backend (port 3001) and frontend (port 3000) servers.
+
 ## License
 
 MIT License - see LICENSE file for details.
 
 ## Support
 
-If you encounter any issues or have questions, please open an issue in the repository. 
+If you encounter any issues or have questions, please open an issue in the repository.
+
+## Live Demo
+
+🌐 **Live Application**: [https://dmitry.github.io/MyQuiz](https://dmitry.github.io/MyQuiz) 
