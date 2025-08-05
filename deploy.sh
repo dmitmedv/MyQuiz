@@ -25,7 +25,7 @@ if [ $? -eq 0 ]; then
     git push origin main
     
     echo "🎉 Deployment completed! Your app will be available at:"
-    echo "   https://dmitry.github.io/MyQuiz"
+    echo "   https://dmitmedv.github.io/MyQuiz"
     echo ""
     echo "Note: It may take a few minutes for the changes to appear."
 else

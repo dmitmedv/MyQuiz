@@ -28,7 +28,7 @@ A responsive web application similar to Quizlet, designed to help users learn fo
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/dmitry/MyQuiz.git
+   git clone https://github.com/dmitmedv/MyQuiz.git
    cd MyQuiz
    ```
 
@@ -203,7 +203,7 @@ The application is automatically deployed to GitHub Pages when you push to the m
    ```
 
 2. **Access your deployed app**:
-   - Go to: `https://dmitry.github.io/MyQuiz`
+   - Go to: `https://dmitmedv.github.io/MyQuiz`
    - The app will be available after GitHub Actions completes the deployment
 
 ### Manual Deployment
@@ -233,4 +233,4 @@ If you encounter any issues or have questions, please open an issue in the repos
 
 ## Live Demo
 
-🌐 **Live Application**: [https://dmitry.github.io/MyQuiz](https://dmitry.github.io/MyQuiz) 
+🌐 **Live Application**: [https://dmitmedv.github.io/MyQuiz](https://dmitmedv.github.io/MyQuiz) 
