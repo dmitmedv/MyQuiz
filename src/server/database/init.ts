@@ -1,7 +1,9 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 
-const dbPath = path.join(__dirname, '../../../data/vocabulary.db');
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../../../data/vocabulary.db')
+  : path.join(__dirname, '../../../data/vocabulary.db');
 
 export const db = new sqlite3.Database(dbPath);
 
