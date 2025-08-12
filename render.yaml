@@ -7,6 +7,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Ensure devDependencies (e.g., TypeScript types) are installed during build
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: PORT
         value: 10000
     healthCheckPath: /api/vocabulary
