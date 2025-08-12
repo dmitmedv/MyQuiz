@@ -39,11 +39,15 @@ if (NODE_ENV === 'production') {
 // Initialize database and start server
 async function startServer() {
   try {
+    console.log(`Starting server in ${NODE_ENV} mode on port ${PORT}`);
+    console.log(`Current working directory: ${process.cwd()}`);
+    
     await initializeDatabase();
     console.log('Database initialized successfully');
     
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    app.listen(Number(PORT), '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT} on all interfaces`);
+      console.log(`Environment: ${NODE_ENV}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
