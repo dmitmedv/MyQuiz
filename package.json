@@ -11,8 +11,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:client": "cd client && npm run build",
     "start": "node dist/server/index.js",
-    "install:client": "cd client && npm install",
-    "postinstall": "cd client && npm install"
+    "install:client": "cd client && npm install"
   },
   "dependencies": {
     "@types/cors": "^2.8.17",
