@@ -15,4 +15,8 @@ services:
         value: 10000
     healthCheckPath: /api/vocabulary
     autoDeploy: true
-    plan: free
+    plan: starter
+    disk:
+      name: myquiz-data
+      mountPath: /data
+      sizeGB: 0.1
