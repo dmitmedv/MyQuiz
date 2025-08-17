@@ -8,6 +8,7 @@ const Practice: React.FC = () => {
   const [result, setResult] = useState<PracticeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [stats, setStats] = useState({ total: 0, unlearned: 0, learned: 0, progress: 0 });
 
   useEffect(() => {
@@ -28,16 +29,19 @@ const Practice: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      setIsCompleted(false);
       setResult(null);
       setUserAnswer('');
       
       const word = await apiService.getPracticeWord();
       setCurrentWord(word);
     } catch (err: any) {
-      if (err.message.includes('No unlearned words')) {
-        setError('Congratulations! You have learned all your vocabulary words. 🎉');
+      if (err.message.includes('No unlearned words available for practice')) {
+        setIsCompleted(true);
+        setError(null);
       } else {
         setError('Failed to load practice word');
+        setIsCompleted(false);
       }
       console.error(err);
     } finally {
@@ -81,9 +85,11 @@ const Practice: React.FC = () => {
     try {
       await apiService.resetPractice();
       await loadStats();
+      setIsCompleted(false);
       loadNewWord();
     } catch (err) {
       setError('Failed to reset practice');
+      setIsCompleted(false);
       console.error(err);
     }
   };
@@ -125,12 +131,13 @@ const Practice: React.FC = () => {
         </div>
       </div>
 
-      {error && (
+      {/* Completion State */}
+      {isCompleted && (
         <div className="card mb-6">
           <div className="text-center">
             <div className="text-gray-400 text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-medium text-gray-900 mb-2">Great job!</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-gray-600 mb-4">Congratulations! You have learned all your vocabulary words.</p>
             <button onClick={handleReset} className="btn-primary">
               Reset Progress
             </button>
@@ -138,7 +145,21 @@ const Practice: React.FC = () => {
         </div>
       )}
 
-      {currentWord && !error && (
+      {/* Error State */}
+      {error && !isCompleted && (
+        <div className="card mb-6">
+          <div className="text-center">
+            <div className="text-gray-400 text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-medium text-gray-900 mb-2">Oops!</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button onClick={loadNewWord} className="btn-primary">
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {currentWord && !error && !isCompleted && (
         <div className="card">
           <div className="text-center mb-6">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Translate this word:</h3>

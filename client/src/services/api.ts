@@ -68,7 +68,9 @@ class ApiService {
   async getPracticeWord(): Promise<PracticeSession> {
     const response = await fetch(`${API_BASE}/practice/word`);
     if (!response.ok) {
-      throw new Error('Failed to fetch practice word');
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || 'Failed to fetch practice word';
+      throw new Error(errorMessage);
     }
     return response.json();
   }
