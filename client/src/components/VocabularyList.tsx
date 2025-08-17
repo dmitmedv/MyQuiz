@@ -111,70 +111,86 @@ const VocabularyList: React.FC = () => {
           <p className="text-gray-500 mb-4">Start by adding some words to your vocabulary list.</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {vocabulary.map((item) => (
-            <div key={item.id} className="card">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Table header */}
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-4 items-center">
+              <div className="col-span-4 text-sm font-medium text-gray-700">Word</div>
+              <div className="col-span-4 text-sm font-medium text-gray-700">Translation</div>
+              <div className="col-span-2 text-sm font-medium text-gray-700">Status</div>
+              <div className="col-span-2 text-sm font-medium text-gray-700">Actions</div>
+            </div>
+          </div>
+          
+          {/* Vocabulary items */}
+          {vocabulary.map((item, index) => (
+            <div key={item.id} className={`px-4 py-3 ${index !== vocabulary.length - 1 ? 'border-b border-gray-100' : ''}`}>
               {editingId === item.id ? (
+                // Edit mode - full width form
                 <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={editForm.word}
-                    onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
-                    className="input"
-                    placeholder="Foreign word"
-                  />
-                  <input
-                    type="text"
-                    value={editForm.translation}
-                    onChange={(e) => setEditForm({ ...editForm, translation: e.target.value })}
-                    className="input"
-                    placeholder="Translation"
-                  />
-                  <div className="flex space-x-2">
-                    <button onClick={handleSaveEdit} className="btn-success flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      value={editForm.word}
+                      onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
+                      className="input"
+                      placeholder="Foreign word"
+                    />
+                    <input
+                      type="text"
+                      value={editForm.translation}
+                      onChange={(e) => setEditForm({ ...editForm, translation: e.target.value })}
+                      className="input"
+                      placeholder="Translation"
+                    />
+                  </div>
+                  <div className="flex space-x-2 justify-end">
+                    <button onClick={handleSaveEdit} className="btn-success px-4 py-1 text-sm">
                       Save
                     </button>
-                    <button onClick={handleCancelEdit} className="btn-secondary flex-1">
+                    <button onClick={handleCancelEdit} className="btn-secondary px-4 py-1 text-sm">
                       Cancel
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {item.word}
-                      </h3>
-                      <p className="text-gray-600">{item.translation}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                // Display mode - compact list row
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  <div className="col-span-4">
+                    <span className="font-medium text-gray-900">{item.word}</span>
+                  </div>
+                  <div className="col-span-4">
+                    <span className="text-gray-600">{item.translation}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      onClick={() => toggleLearned(item)}
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        item.learned
+                          ? 'bg-success-100 text-success-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {item.learned ? 'Learned' : 'Learning'}
+                    </button>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex space-x-1">
                       <button
-                        onClick={() => toggleLearned(item)}
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          item.learned
-                            ? 'bg-success-100 text-success-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
+                        onClick={() => handleEdit(item)}
+                        className="btn-secondary px-2 py-1 text-xs"
+                        title="Edit word"
                       >
-                        {item.learned ? 'Learned' : 'Not Learned'}
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="btn-error px-2 py-1 text-xs"
+                        title="Delete word"
+                      >
+                        Del
                       </button>
                     </div>
-                  </div>
-                  
-                  <div className="flex space-x-2 pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="btn-secondary flex-1 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="btn-error flex-1 text-sm"
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
               )}
