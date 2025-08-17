@@ -32,4 +32,5 @@ export interface PracticeResult {
   correct: boolean;
   expectedTranslation: string;
   userTranslation: string;
+  originalAnswer?: string; // The original answer with diacriticals (only included if different from expectedTranslation)
 } 

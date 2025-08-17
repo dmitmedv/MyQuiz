@@ -95,25 +95,36 @@ router.post('/check', (req, res) => {
     }
 
     let expectedAnswer: string;
+    let originalAnswer: string; // The answer with original diacriticals from database
     let isCorrect: boolean;
 
     // Determine the expected answer based on practice mode
     if (practiceMode === 'word-translation') {
       // User should translate from word to translation
       expectedAnswer = row.translation;
+      originalAnswer = row.translation;
       // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
       isCorrect = normalizeText(row.translation) === normalizeText(userTranslation);
     } else {
       // User should translate from translation to word  
       expectedAnswer = row.word;
+      originalAnswer = row.word;
       // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
       isCorrect = normalizeText(row.word) === normalizeText(userTranslation);
     }
 
+    // Check if the original answer differs from normalized versions
+    // Only include originalAnswer if it contains diacriticals that differ from user input
+    const shouldShowOriginal = isCorrect && 
+      normalizeText(originalAnswer) !== originalAnswer && 
+      normalizeText(userTranslation) !== originalAnswer;
+
     const result: PracticeResult = {
       correct: isCorrect,
       expectedTranslation: expectedAnswer,
-      userTranslation: userTranslation
+      userTranslation: userTranslation,
+      // Only include originalAnswer if it contains diacriticals and differs from user input
+      ...(shouldShowOriginal && { originalAnswer })
     };
 
     // If correct, mark as learned

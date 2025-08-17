@@ -315,6 +315,11 @@ const Practice: React.FC = () => {
                     Correct answer: <span className="font-medium text-success-700">{result.expectedTranslation}</span>
                   </p>
                 )}
+                {result.correct && result.originalAnswer && (
+                  <p className="text-gray-600">
+                    Original: <span className="font-medium text-primary-700">{result.originalAnswer}</span>
+                  </p>
+                )}
               </div>
               
               <button
