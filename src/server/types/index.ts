@@ -18,10 +18,14 @@ export interface UpdateVocabularyRequest {
   learned?: boolean;
 }
 
+// Practice mode types
+export type PracticeMode = 'word-translation' | 'translation-word';
+
 export interface PracticeSession {
   id: number;
   word: string;
   translation: string;
+  mode: PracticeMode;
 }
 
 export interface PracticeResult {

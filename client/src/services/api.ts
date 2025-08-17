@@ -4,7 +4,8 @@ import {
   UpdateVocabularyRequest,
   PracticeSession,
   PracticeResult,
-  PracticeStats
+  PracticeStats,
+  PracticeMode
 } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
@@ -65,8 +66,8 @@ class ApiService {
   }
 
   // Practice endpoints
-  async getPracticeWord(): Promise<PracticeSession> {
-    const response = await fetch(`${API_BASE}/practice/word`);
+  async getPracticeWord(mode: PracticeMode = 'word-translation'): Promise<PracticeSession> {
+    const response = await fetch(`${API_BASE}/practice/word?mode=${mode}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.error || 'Failed to fetch practice word';
@@ -75,13 +76,13 @@ class ApiService {
     return response.json();
   }
 
-  async checkAnswer(id: number, userTranslation: string): Promise<PracticeResult> {
+  async checkAnswer(id: number, userTranslation: string, mode: PracticeMode = 'word-translation'): Promise<PracticeResult> {
     const response = await fetch(`${API_BASE}/practice/check`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ id, userTranslation }),
+      body: JSON.stringify({ id, userTranslation, mode }),
     });
     if (!response.ok) {
       throw new Error('Failed to check answer');

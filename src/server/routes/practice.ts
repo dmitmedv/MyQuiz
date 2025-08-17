@@ -1,11 +1,19 @@
 import { Router } from 'express';
 import { db } from '../database/init';
-import { PracticeSession, PracticeResult } from '../types';
+import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 
 const router = Router();
 
 // Get a random word for practice (not learned)
 router.get('/word', (req, res) => {
+  // Get practice mode from query parameter, default to 'word-translation'
+  const mode = (req.query.mode as PracticeMode) || 'word-translation';
+  
+  // Validate mode parameter
+  if (mode !== 'word-translation' && mode !== 'translation-word') {
+    return res.status(400).json({ error: 'Invalid practice mode. Must be "word-translation" or "translation-word"' });
+  }
+
   const query = `
     SELECT id, word, translation 
     FROM vocabulary 
@@ -14,7 +22,7 @@ router.get('/word', (req, res) => {
     LIMIT 1
   `;
 
-  db.get(query, [], (err, row: PracticeSession) => {
+  db.get(query, [], (err, row: { id: number; word: string; translation: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -24,22 +32,34 @@ router.get('/word', (req, res) => {
       return res.status(404).json({ error: 'No unlearned words available for practice' });
     }
 
-    res.json(row);
+    // Include the practice mode in the response
+    const practiceSession: PracticeSession = {
+      ...row,
+      mode
+    };
+
+    res.json(practiceSession);
   });
 });
 
 // Check answer and mark as learned if correct
 router.post('/check', (req, res) => {
-  const { id, userTranslation } = req.body;
+  const { id, userTranslation, mode } = req.body;
 
   if (!id || userTranslation === undefined) {
     return res.status(400).json({ error: 'Word ID and user translation are required' });
   }
 
-  // Get the correct translation
-  const getWordQuery = 'SELECT translation FROM vocabulary WHERE id = ?';
+  // Validate mode parameter
+  const practiceMode = mode || 'word-translation';
+  if (practiceMode !== 'word-translation' && practiceMode !== 'translation-word') {
+    return res.status(400).json({ error: 'Invalid practice mode' });
+  }
+
+  // Get the word and translation
+  const getWordQuery = 'SELECT word, translation FROM vocabulary WHERE id = ?';
   
-  db.get(getWordQuery, [id], (err, row: { translation: string }) => {
+  db.get(getWordQuery, [id], (err, row: { word: string; translation: string }) => {
     if (err) {
       console.error('Error fetching word for checking:', err);
       return res.status(500).json({ error: 'Failed to check answer' });
@@ -49,13 +69,23 @@ router.post('/check', (req, res) => {
       return res.status(404).json({ error: 'Word not found' });
     }
 
-    const expectedTranslation = row.translation.toLowerCase().trim();
-    const userAnswer = userTranslation.toLowerCase().trim();
-    const isCorrect = expectedTranslation === userAnswer;
+    let expectedAnswer: string;
+    let isCorrect: boolean;
+
+    // Determine the expected answer based on practice mode
+    if (practiceMode === 'word-translation') {
+      // User should translate from word to translation
+      expectedAnswer = row.translation;
+      isCorrect = row.translation.toLowerCase().trim() === userTranslation.toLowerCase().trim();
+    } else {
+      // User should translate from translation to word  
+      expectedAnswer = row.word;
+      isCorrect = row.word.toLowerCase().trim() === userTranslation.toLowerCase().trim();
+    }
 
     const result: PracticeResult = {
       correct: isCorrect,
-      expectedTranslation: row.translation,
+      expectedTranslation: expectedAnswer,
       userTranslation: userTranslation
     };
 
