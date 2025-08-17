@@ -2,6 +2,31 @@ import { Router } from 'express';
 import { db } from '../database/init';
 import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 
+/**
+ * Normalize text by removing diacritical marks to allow flexible matching
+ * For example: ž → z, ć → c, š → s, etc.
+ */
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    // Normalize common Slavic diacriticals
+    .replace(/[žŽ]/g, 'z')
+    .replace(/[ćčĆČ]/g, 'c')
+    .replace(/[šŠ]/g, 's')
+    .replace(/[ňŇ]/g, 'n')
+    .replace(/[ďĎ]/g, 'd')
+    .replace(/[ťŤ]/g, 't')
+    .replace(/[ľĽłŁ]/g, 'l')
+    .replace(/[řŘ]/g, 'r')
+    .replace(/[áäÁÄ]/g, 'a')
+    .replace(/[éěÉĚ]/g, 'e')
+    .replace(/[íÍ]/g, 'i')
+    .replace(/[óôÓÔ]/g, 'o')
+    .replace(/[úůüÚŮÜ]/g, 'u')
+    .replace(/[ýÝ]/g, 'y');
+}
+
 const router = Router();
 
 // Get a random word for practice (not learned)
@@ -76,11 +101,13 @@ router.post('/check', (req, res) => {
     if (practiceMode === 'word-translation') {
       // User should translate from word to translation
       expectedAnswer = row.translation;
-      isCorrect = row.translation.toLowerCase().trim() === userTranslation.toLowerCase().trim();
+      // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
+      isCorrect = normalizeText(row.translation) === normalizeText(userTranslation);
     } else {
       // User should translate from translation to word  
       expectedAnswer = row.word;
-      isCorrect = row.word.toLowerCase().trim() === userTranslation.toLowerCase().trim();
+      // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
+      isCorrect = normalizeText(row.word) === normalizeText(userTranslation);
     }
 
     const result: PracticeResult = {
