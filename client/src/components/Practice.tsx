@@ -9,14 +9,12 @@ const Practice: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [stats, setStats] = useState({ total: 0, unlearned: 0, learned: 0, progress: 0 });
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('word-translation');
   
   // Ref for the input field to programmatically focus it
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadStats();
     loadNewWord();
   }, []);
 
@@ -61,14 +59,7 @@ const Practice: React.FC = () => {
     };
   }, [loading, result, userAnswer]); // Dependencies ensure the handler has access to current state
 
-  const loadStats = async () => {
-    try {
-      const data = await apiService.getPracticeStats();
-      setStats(data);
-    } catch (err) {
-      console.error('Failed to load stats:', err);
-    }
-  };
+
 
   const loadNewWord = async () => {
     try {
@@ -101,9 +92,6 @@ const Practice: React.FC = () => {
       setLoading(true);
       const result = await apiService.checkAnswer(currentWord.id, userAnswer, practiceMode);
       setResult(result);
-      
-      // Update stats after checking answer
-      await loadStats();
     } catch (err) {
       setError('Failed to check answer');
       console.error(err);
@@ -131,7 +119,6 @@ const Practice: React.FC = () => {
 
     try {
       await apiService.resetPractice();
-      await loadStats();
       setIsCompleted(false);
       loadNewWord();
     } catch (err) {
@@ -205,27 +192,7 @@ const Practice: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="card mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-primary-600">{stats.total}</div>
-            <div className="text-sm text-gray-500">Total Words</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-success-600">{stats.learned}</div>
-            <div className="text-sm text-gray-500">Learned</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-600">{stats.unlearned}</div>
-            <div className="text-sm text-gray-500">To Learn</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{stats.progress}%</div>
-            <div className="text-sm text-gray-500">Progress</div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Completion State */}
       {isCompleted && (

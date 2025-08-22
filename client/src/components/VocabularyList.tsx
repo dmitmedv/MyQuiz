@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VocabularyItem } from '../types';
+import { VocabularyItem, PracticeStats } from '../types';
 import { apiService } from '../services/api';
 
 const VocabularyList: React.FC = () => {
@@ -8,9 +8,11 @@ const VocabularyList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ word: '', translation: '' });
+  const [stats, setStats] = useState<PracticeStats>({ total: 0, unlearned: 0, learned: 0, progress: 0 });
 
   useEffect(() => {
     loadVocabulary();
+    loadStats();
   }, []);
 
   const loadVocabulary = async () => {
@@ -27,6 +29,15 @@ const VocabularyList: React.FC = () => {
     }
   };
 
+  const loadStats = async () => {
+    try {
+      const data = await apiService.getPracticeStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this word?')) {
       return;
@@ -35,6 +46,8 @@ const VocabularyList: React.FC = () => {
     try {
       await apiService.deleteVocabularyItem(id);
       setVocabulary(vocabulary.filter(item => item.id !== id));
+      // Refresh stats after deleting an item
+      await loadStats();
     } catch (err) {
       setError('Failed to delete vocabulary item');
       console.error(err);
@@ -56,6 +69,8 @@ const VocabularyList: React.FC = () => {
       ));
       setEditingId(null);
       setEditForm({ word: '', translation: '' });
+      // Refresh stats after editing an item
+      await loadStats();
     } catch (err) {
       setError('Failed to update vocabulary item');
       console.error(err);
@@ -75,6 +90,8 @@ const VocabularyList: React.FC = () => {
       setVocabulary(vocabulary.map(v => 
         v.id === item.id ? updatedItem : v
       ));
+      // Refresh stats after toggling learned status
+      await loadStats();
     } catch (err) {
       setError('Failed to update vocabulary item');
       console.error(err);
@@ -95,6 +112,29 @@ const VocabularyList: React.FC = () => {
         <h2 className="text-3xl font-bold text-gray-900">Vocabulary List</h2>
         <div className="text-sm text-gray-500">
           {vocabulary.length} words total
+        </div>
+      </div>
+
+      {/* Statistics Panel */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Progress</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <div className="text-2xl font-bold text-primary-600">{stats.total}</div>
+            <div className="text-sm text-gray-500">Total Words</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-success-600">{stats.learned}</div>
+            <div className="text-sm text-gray-500">Learned</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-gray-600">{stats.unlearned}</div>
+            <div className="text-sm text-gray-500">To Learn</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-600">{stats.progress}%</div>
+            <div className="text-sm text-gray-500">Progress</div>
+          </div>
         </div>
       </div>
 
