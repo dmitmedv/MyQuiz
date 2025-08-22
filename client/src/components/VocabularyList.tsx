@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyItem, PracticeStats } from '../types';
 import { apiService } from '../services/api';
+import { getLanguageFlag, getLanguageName } from '../utils/flags';
 
 const VocabularyList: React.FC = () => {
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ word: '', translation: '' });
+  const [editForm, setEditForm] = useState({ word: '', translation: '', language: 'serbian' });
   const [stats, setStats] = useState<PracticeStats>({ total: 0, unlearned: 0, learned: 0, progress: 0 });
+
+  // Available languages for editing
+  const languages = [
+    { value: 'serbian', flag: '🇷🇸', name: 'Serbian' },
+    { value: 'russian', flag: '🇷🇺', name: 'Russian' },
+    { value: 'english', flag: '🇬🇧', name: 'English' }
+  ];
 
   useEffect(() => {
     loadVocabulary();
@@ -56,7 +64,7 @@ const VocabularyList: React.FC = () => {
 
   const handleEdit = (item: VocabularyItem) => {
     setEditingId(item.id);
-    setEditForm({ word: item.word, translation: item.translation });
+    setEditForm({ word: item.word, translation: item.translation, language: item.language });
   };
 
   const handleSaveEdit = async () => {
@@ -68,7 +76,7 @@ const VocabularyList: React.FC = () => {
         item.id === editingId ? updatedItem : item
       ));
       setEditingId(null);
-      setEditForm({ word: '', translation: '' });
+      setEditForm({ word: '', translation: '', language: 'serbian' });
       // Refresh stats after editing an item
       await loadStats();
     } catch (err) {
@@ -79,7 +87,7 @@ const VocabularyList: React.FC = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditForm({ word: '', translation: '' });
+    setEditForm({ word: '', translation: '', language: 'serbian' });
   };
 
   const toggleLearned = async (item: VocabularyItem) => {
@@ -155,8 +163,9 @@ const VocabularyList: React.FC = () => {
           {/* Table header */}
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
             <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-4 text-sm font-medium text-gray-700">Word</div>
-              <div className="col-span-4 text-sm font-medium text-gray-700">Translation</div>
+              <div className="col-span-3 text-sm font-medium text-gray-700">Word</div>
+              <div className="col-span-3 text-sm font-medium text-gray-700">Translation</div>
+              <div className="col-span-2 text-sm font-medium text-gray-700">Language</div>
               <div className="col-span-2 text-sm font-medium text-gray-700">Status</div>
               <div className="col-span-2 text-sm font-medium text-gray-700">Actions</div>
             </div>
@@ -168,7 +177,7 @@ const VocabularyList: React.FC = () => {
               {editingId === item.id ? (
                 // Edit mode - full width form
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <input
                       type="text"
                       value={editForm.word}
@@ -183,6 +192,17 @@ const VocabularyList: React.FC = () => {
                       className="input"
                       placeholder="Translation"
                     />
+                    <select
+                      value={editForm.language}
+                      onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                      className="input"
+                    >
+                      {languages.map(lang => (
+                        <option key={lang.value} value={lang.value}>
+                          {lang.flag} {lang.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex space-x-2 justify-end">
                     <button onClick={handleSaveEdit} className="btn-success px-4 py-1 text-sm">
@@ -196,11 +216,17 @@ const VocabularyList: React.FC = () => {
               ) : (
                 // Display mode - compact list row
                 <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <span className="font-medium text-gray-900">{item.word}</span>
                   </div>
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <span className="text-gray-600">{item.translation}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="inline-flex items-center text-sm text-gray-600">
+                      <span className="mr-1">{getLanguageFlag(item.language)}</span>
+                      {getLanguageName(item.language)}
+                    </span>
                   </div>
                   <div className="col-span-2">
                     <button

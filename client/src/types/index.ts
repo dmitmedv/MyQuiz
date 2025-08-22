@@ -2,6 +2,7 @@ export interface VocabularyItem {
   id: number;
   word: string;
   translation: string;
+  language: string; // Language of the word/phrase (serbian, russian, english)
   learned: boolean;
   created_at: string;
   updated_at: string;
@@ -10,11 +11,13 @@ export interface VocabularyItem {
 export interface CreateVocabularyRequest {
   word: string;
   translation: string;
+  language: string; // Language of the word/phrase
 }
 
 export interface UpdateVocabularyRequest {
   word?: string;
   translation?: string;
+  language?: string; // Language of the word/phrase
   learned?: boolean;
 }
 
@@ -25,6 +28,7 @@ export interface PracticeSession {
   id: number;
   word: string;
   translation: string;
+  language: string; // Language of the word/phrase
   mode: PracticeMode;
 }
 

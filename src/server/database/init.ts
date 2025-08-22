@@ -9,12 +9,13 @@ export const db = new sqlite3.Database(dbPath);
 
 export async function initializeDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Create vocabulary table
+    // Create vocabulary table with language field
     const createVocabularyTable = `
       CREATE TABLE IF NOT EXISTS vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         word TEXT NOT NULL,
         translation TEXT NOT NULL,
+        language TEXT NOT NULL DEFAULT 'serbian',
         learned BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -26,6 +27,16 @@ export async function initializeDatabase(): Promise<void> {
         reject(err);
         return;
       }
+
+      // Add language column if it doesn't exist (for existing databases)
+      db.run("ALTER TABLE vocabulary ADD COLUMN language TEXT DEFAULT 'serbian'", (err) => {
+        // Ignore error if column already exists
+        if (err && !err.message.includes('duplicate column name')) {
+          console.warn('Warning: Could not add language column:', err.message);
+        } else {
+          console.log('Language column added successfully. Existing items will use default language: serbian');
+        }
+      });
 
       // Create index for better performance
       const createIndex = `

@@ -42,18 +42,21 @@ router.get('/:id', (req, res) => {
 
 // Create new vocabulary item
 router.post('/', (req, res) => {
-  const { word, translation }: CreateVocabularyRequest = req.body;
+  const { word, translation, language }: CreateVocabularyRequest = req.body;
   
   if (!word || !translation) {
     return res.status(400).json({ error: 'Word and translation are required' });
   }
   
+  // Default to serbian if no language is specified
+  const defaultLanguage = language || 'serbian';
+  
   const query = `
-    INSERT INTO vocabulary (word, translation) 
-    VALUES (?, ?)
+    INSERT INTO vocabulary (word, translation, language) 
+    VALUES (?, ?, ?)
   `;
   
-  db.run(query, [word.trim(), translation.trim()], function(err) {
+  db.run(query, [word.trim(), translation.trim(), defaultLanguage], function(err) {
     if (err) {
       console.error('Error creating vocabulary item:', err);
       return res.status(500).json({ error: 'Failed to create vocabulary item' });
@@ -88,6 +91,11 @@ router.put('/:id', (req, res) => {
   if (updates.translation !== undefined) {
     setClause.push('translation = ?');
     values.push(updates.translation.trim());
+  }
+  
+  if (updates.language !== undefined) {
+    setClause.push('language = ?');
+    values.push(updates.language);
   }
   
   if (updates.learned !== undefined) {

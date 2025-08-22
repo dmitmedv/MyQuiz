@@ -40,14 +40,14 @@ router.get('/word', (req, res) => {
   }
 
   const query = `
-    SELECT id, word, translation 
+    SELECT id, word, translation, language 
     FROM vocabulary 
     WHERE learned = 0 
     ORDER BY RANDOM() 
     LIMIT 1
   `;
 
-  db.get(query, [], (err, row: { id: number; word: string; translation: string }) => {
+  db.get(query, [], (err, row: { id: number; word: string; translation: string; language: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -57,7 +57,7 @@ router.get('/word', (req, res) => {
       return res.status(404).json({ error: 'No unlearned words available for practice' });
     }
 
-    // Include the practice mode in the response
+    // Include the practice mode and language in the response
     const practiceSession: PracticeSession = {
       ...row,
       mode

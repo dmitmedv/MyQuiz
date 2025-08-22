@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 import { apiService } from '../services/api';
+import { getLanguageFlag, getLanguageName } from '../utils/flags';
 
 const Practice: React.FC = () => {
   const [currentWord, setCurrentWord] = useState<PracticeSession | null>(null);
@@ -14,26 +15,62 @@ const Practice: React.FC = () => {
   // Ref for the input field to programmatically focus it
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadNewWord();
-  }, []);
 
-  // Load new word when practice mode changes
-  useEffect(() => {
-    if (currentWord) {
-      loadNewWord();
+
+
+
+
+
+  const loadNewWord = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsCompleted(false);
+      setResult(null);
+      setUserAnswer('');
+      
+      const word = await apiService.getPracticeWord(practiceMode);
+      setCurrentWord(word);
+    } catch (err: any) {
+      if (err.message.includes('No unlearned words available for practice')) {
+        setIsCompleted(true);
+        setError(null);
+      } else {
+        setError('Failed to load practice word');
+        setIsCompleted(false);
+      }
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   }, [practiceMode]);
 
-  // Focus the input field whenever a new word is loaded and no result is showing
-  useEffect(() => {
-    if (currentWord && !result && !loading && inputRef.current) {
-      // Small delay to ensure the input is rendered
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+  const handleCheckAnswer = useCallback(async () => {
+    if (!currentWord || !userAnswer.trim()) return;
+
+    try {
+      setLoading(true);
+      const result = await apiService.checkAnswer(currentWord.id, userAnswer, practiceMode);
+      setResult(result);
+    } catch (err) {
+      setError('Failed to check answer');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  }, [currentWord, result, loading]);
+  }, [currentWord, userAnswer, practiceMode]);
+
+  const handleNextWord = useCallback(() => {
+    loadNewWord();
+  }, [loadNewWord]);
+
+  // Legacy key handler for input field - now handled globally
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    // This is now handled by the global key listener, but keeping for input-specific behavior if needed
+    if (e.key === 'Enter' && !loading && !result && userAnswer.trim()) {
+      handleCheckAnswer();
+    }
+  };
 
   // Add global key event listener for Enter key
   useEffect(() => {
@@ -57,62 +94,36 @@ const Practice: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', handleGlobalKeyPress);
     };
-  }, [loading, result, userAnswer]); // Dependencies ensure the handler has access to current state
+  }, [loading, result, userAnswer, handleCheckAnswer, handleNextWord]); // Dependencies ensure the handler has access to current state
 
-
-
-  const loadNewWord = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsCompleted(false);
-      setResult(null);
-      setUserAnswer('');
-      
-      const word = await apiService.getPracticeWord(practiceMode);
-      setCurrentWord(word);
-    } catch (err: any) {
-      if (err.message.includes('No unlearned words available for practice')) {
-        setIsCompleted(true);
-        setError(null);
-      } else {
-        setError('Failed to load practice word');
-        setIsCompleted(false);
-      }
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckAnswer = async () => {
-    if (!currentWord || !userAnswer.trim()) return;
-
-    try {
-      setLoading(true);
-      const result = await apiService.checkAnswer(currentWord.id, userAnswer, practiceMode);
-      setResult(result);
-    } catch (err) {
-      setError('Failed to check answer');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNextWord = () => {
+  // Initial load effect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
     loadNewWord();
-  };
+  }, []); // Only run once on mount
 
-  // Legacy key handler for input field - now handled globally
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    // This is now handled by the global key listener, but keeping for input-specific behavior if needed
-    if (e.key === 'Enter' && !loading && !result && userAnswer.trim()) {
-      handleCheckAnswer();
+  // Load new word when practice mode changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Reset current word and load new one when practice mode changes
+    setCurrentWord(null);
+    setResult(null);
+    setUserAnswer('');
+    loadNewWord();
+  }, [practiceMode]); // Only depend on practiceMode
+
+  // Focus the input field whenever a new word is loaded and no result is showing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (currentWord && !result && !loading && inputRef.current) {
+      // Small delay to ensure the input is rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
-  };
+  }, [currentWord, result, loading]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     if (!window.confirm('Are you sure you want to reset all progress? This will mark all words as unlearned.')) {
       return;
     }
@@ -126,7 +137,7 @@ const Practice: React.FC = () => {
       setIsCompleted(false);
       console.error(err);
     }
-  };
+  }, [loadNewWord]);
 
   // Helper function to get the displayed text based on practice mode
   const getDisplayText = () => {
@@ -219,8 +230,14 @@ const Practice: React.FC = () => {
           <div className="text-center mb-6">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">{getInstructionText()}</h3>
             <div className="text-4xl font-bold text-primary-600 mb-4">
+              {/* Display flag for the language of the word/phrase being shown */}
+              <span className="mr-2">{getLanguageFlag(currentWord.language)}</span>
               {getDisplayText()}
             </div>
+            {/* Show language name below the word/phrase */}
+            <p className="text-sm text-gray-500">
+              Language: {getLanguageName(currentWord.language)}
+            </p>
           </div>
 
           {!result ? (
