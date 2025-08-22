@@ -158,37 +158,29 @@ const Practice: React.FC = () => {
 
       {/* Mode Selection */}
       <div className="card mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Practice Mode</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={() => setPracticeMode('word-translation')}
-            disabled={loading}
-            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-              practiceMode === 'word-translation'
-                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            <div className="text-left">
-              <div className="font-semibold mb-1">Word → Translation</div>
-              <div className="text-sm opacity-75">Translate from foreign word to your language</div>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setPracticeMode('translation-word')}
-            disabled={loading}
-            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-              practiceMode === 'translation-word'
-                ? 'border-primary-500 bg-primary-50 text-primary-700'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            <div className="text-left">
-              <div className="font-semibold mb-1">Translation → Word</div>
-              <div className="text-sm opacity-75">Translate from your language to foreign word</div>
-            </div>
-          </button>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Practice Mode</h3>
+          <div className="flex items-center space-x-2">
+            <span className={`text-sm ${practiceMode === 'word-translation' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
+              Word → Translation
+            </span>
+            <button
+              onClick={() => setPracticeMode(practiceMode === 'word-translation' ? 'translation-word' : 'word-translation')}
+              disabled={loading}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                practiceMode === 'translation-word' ? 'bg-primary-600' : 'bg-gray-200'
+              } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  practiceMode === 'translation-word' ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm ${practiceMode === 'translation-word' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
+              Translation → Word
+            </span>
+          </div>
         </div>
       </div>
 
