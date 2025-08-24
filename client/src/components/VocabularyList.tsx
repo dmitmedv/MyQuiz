@@ -46,6 +46,45 @@ const VocabularyList: React.FC = () => {
     }
   };
 
+  // Function to export vocabulary data to a JSON file
+  const handleExportVocabulary = () => {
+    try {
+      // Create export data with timestamp and metadata
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        totalWords: vocabulary.length,
+        vocabulary: vocabulary.map(item => ({
+          word: item.word,
+          translation: item.translation
+        }))
+      };
+
+      // Create blob and download link
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `vocabulary-backup-${new Date().toISOString().split('T')[0]}.json`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up URL object
+      URL.revokeObjectURL(url);
+      
+      // Show success message (optional)
+      setError(null);
+    } catch (err) {
+      setError('Failed to export vocabulary data');
+      console.error('Export error:', err);
+    }
+  };
+
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this word?')) {
       return;
@@ -118,8 +157,19 @@ const VocabularyList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-gray-900">Vocabulary List</h2>
-        <div className="text-sm text-gray-500">
-          {vocabulary.length} words total
+        <div className="flex items-center space-x-4">
+          {/* Export button */}
+          <button
+            onClick={handleExportVocabulary}
+            className="btn-primary px-4 py-2 text-sm flex items-center space-x-2"
+            title="Export all vocabulary to JSON file"
+          >
+            <span>💾</span>
+            <span>Save Backup</span>
+          </button>
+          <div className="text-sm text-gray-500">
+            {vocabulary.length} words total
+          </div>
         </div>
       </div>
 
