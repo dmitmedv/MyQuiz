@@ -245,165 +245,172 @@ const VocabularyList: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Table header */}
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <div className="grid grid-cols-14 gap-4 items-center">
-              <div className="col-span-3 text-sm font-medium text-gray-700">Word</div>
-              <div className="col-span-3 text-sm font-medium text-gray-700">Translation</div>
-              <div className="col-span-2 text-sm font-medium text-gray-700">Language</div>
-              <div className="col-span-2 text-sm font-medium text-gray-700">Status</div>
-              <div className="col-span-2 text-sm font-medium text-gray-700">Attempts</div>
-              <div className="col-span-2 text-sm font-medium text-gray-700">Actions</div>
-            </div>
-          </div>
-          
-          {/* Vocabulary items */}
-          {vocabulary.map((item, index) => (
-            <div key={item.id} className={`px-4 py-3 ${index !== vocabulary.length - 1 ? 'border-b border-gray-100' : ''}`}>
-              {editingId === item.id ? (
-                // Edit mode - full width form
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-4">
-                    <input
-                      type="text"
-                      value={editForm.word}
-                      onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
-                      className="input"
-                      placeholder="Foreign word"
-                    />
-                    <input
-                      type="text"
-                      value={editForm.translation}
-                      onChange={(e) => setEditForm({ ...editForm, translation: e.target.value })}
-                      className="input"
-                      placeholder="Translation"
-                    />
-                    <select
-                      value={editForm.language}
-                      onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
-                      className="input"
-                    >
-                      {languages.map(lang => (
-                        <option key={lang.value} value={lang.value}>
-                          {lang.flag} {lang.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex space-x-2 justify-end">
-                    <button onClick={handleSaveEdit} className="btn-success px-4 py-1 text-sm">
-                      Save
-                    </button>
-                    <button onClick={handleCancelEdit} className="btn-secondary px-4 py-1 text-sm">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                // Display mode - compact list row
-                <div className="grid grid-cols-14 gap-4 items-center">
-                  <div className="col-span-3">
-                    <span className="font-medium text-gray-900">{item.word}</span>
-                  </div>
-                  <div className="col-span-3">
-                    <span className="text-gray-600">{item.translation}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="inline-flex items-center text-sm text-gray-600">
-                      <span className="mr-1">{getLanguageFlag(item.language)}</span>
-                      {getLanguageName(item.language)}
-                    </span>
-                  </div>
-                  <div className="col-span-2">
-                    <button
-                      onClick={() => toggleLearned(item)}
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        item.learned
-                          ? 'bg-success-100 text-success-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {item.learned ? 'Learned' : 'Learning'}
-                    </button>
-                  </div>
-                  <div className="col-span-2">
+          {/* Proper HTML table */}
+          <table className="w-full">
+            {/* Table header */}
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Word</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Translation</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Language</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Attempts</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            
+            {/* Table body */}
+            <tbody className="divide-y divide-gray-100">
+              {vocabulary.map((item, index) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  {editingId === item.id ? (
+                    // Edit mode - full width form spanning all columns
+                    <td colSpan={6} className="px-4 py-3">
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-4">
+                          <input
+                            type="text"
+                            value={editForm.word}
+                            onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
+                            className="input"
+                            placeholder="Foreign word"
+                          />
+                          <input
+                            type="text"
+                            value={editForm.translation}
+                            onChange={(e) => setEditForm({ ...editForm, translation: e.target.value })}
+                            className="input"
+                            placeholder="Translation"
+                          />
+                          <select
+                            value={editForm.language}
+                            onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                            className="input"
+                          >
+                            {languages.map(lang => (
+                              <option key={lang.value} value={lang.value}>
+                                {lang.flag} {lang.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex space-x-2 justify-end">
+                          <button onClick={handleSaveEdit} className="btn-success px-4 py-1 text-sm">
+                            Save
+                          </button>
+                          <button onClick={handleCancelEdit} className="btn-secondary px-4 py-1 text-sm">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    // Display mode - proper table cells
+                    <>
+                      <td className="px-4 py-3">
+                        <span className="font-medium text-gray-900">{item.word}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-gray-600">{item.translation}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center text-sm text-gray-600">
+                          <span className="mr-1">{getLanguageFlag(item.language)}</span>
+                          {getLanguageName(item.language)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleLearned(item)}
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            item.learned
+                              ? 'bg-success-100 text-success-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {item.learned ? 'Learned' : 'Learning'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-600">
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-success-600 font-medium">✓ {item.correct_attempts || 0}</span>
+                              <span className="text-error-600 font-medium">✗ {item.wrong_attempts || 0}</span>
+                            </div>
+                            {((item.correct_attempts || 0) + (item.wrong_attempts || 0)) > 0 && (
+                              <div className="text-xs text-gray-500">
+                                {item.correct_attempts && item.wrong_attempts 
+                                  ? `${Math.round((item.correct_attempts / (item.correct_attempts + item.wrong_attempts)) * 100)}% success`
+                                  : item.correct_attempts 
+                                    ? '100% success' 
+                                    : '0% success'
+                                }
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="btn-secondary px-2 py-1 text-xs"
+                            title="Edit word"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleResetAttempts(item)}
+                            className="btn-warning px-2 py-1 text-xs"
+                            title="Reset attempts"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="btn-error px-2 py-1 text-xs"
+                            title="Delete word"
+                          >
+                            Del
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+            
+            {/* Table footer with summary */}
+            {vocabulary.length > 0 && (
+              <tfoot className="bg-gray-50 border-t border-gray-200">
+                <tr>
+                  <td colSpan={4} className="px-4 py-3 text-sm text-gray-600 font-medium">
+                    Summary
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="text-sm text-gray-600">
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-success-600 font-medium">✓ {item.correct_attempts || 0}</span>
-                          <span className="text-error-600 font-medium">✗ {item.wrong_attempts || 0}</span>
+                          <span className="text-success-600 font-medium">
+                            ✓ {vocabulary.reduce((sum, item) => sum + (item.correct_attempts || 0), 0)}
+                          </span>
+                          <span className="text-error-600 font-medium">
+                            ✗ {vocabulary.reduce((sum, item) => sum + (item.wrong_attempts || 0), 0)}
+                          </span>
                         </div>
-                        {((item.correct_attempts || 0) + (item.wrong_attempts || 0)) > 0 && (
-                          <div className="text-xs text-gray-500">
-                            {item.correct_attempts && item.wrong_attempts 
-                              ? `${Math.round((item.correct_attempts / (item.correct_attempts + item.wrong_attempts)) * 100)}% success`
-                              : item.correct_attempts 
-                                ? '100% success' 
-                                : '0% success'
-                            }
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500">
+                          Total attempts across all words
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="btn-secondary px-2 py-1 text-xs"
-                        title="Edit word"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleResetAttempts(item)}
-                        className="btn-warning px-2 py-1 text-xs"
-                        title="Reset attempts"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="btn-error px-2 py-1 text-xs"
-                        title="Delete word"
-                      >
-                        Del
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Summary row */}
-          {vocabulary.length > 0 && (
-            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
-              <div className="grid grid-cols-14 gap-4 items-center text-sm">
-                <div className="col-span-9 text-gray-600 font-medium">
-                  Summary
-                </div>
-                <div className="col-span-2 text-center">
-                  <div className="text-gray-600">
-                    <div className="flex flex-col space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-success-600 font-medium">
-                          ✓ {vocabulary.reduce((sum, item) => sum + (item.correct_attempts || 0), 0)}
-                        </span>
-                        <span className="text-error-600 font-medium">
-                          ✗ {vocabulary.reduce((sum, item) => sum + (item.wrong_attempts || 0), 0)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Total attempts across all words
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-span-3"></div>
-              </div>
-            </div>
-          )}
+                  </td>
+                  <td className="px-4 py-3"></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
         </div>
       )}
     </div>
