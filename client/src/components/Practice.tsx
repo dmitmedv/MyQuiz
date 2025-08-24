@@ -16,11 +16,6 @@ const Practice: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
 
-
-
-
-
-
   const loadNewWord = useCallback(async () => {
     try {
       setLoading(true);
@@ -122,6 +117,19 @@ const Practice: React.FC = () => {
       }, 100);
     }
   }, [currentWord, result, loading]);
+
+  // Auto-switch to next word after 1 second when answer is correct
+  useEffect(() => {
+    if (result?.correct) {
+      // Automatically move to next word after 1 second for correct answers
+      const timer = setTimeout(() => {
+        handleNextWord();
+      }, 500);
+      
+      // Cleanup timer if component unmounts or result changes
+      return () => clearTimeout(timer);
+    }
+  }, [result, handleNextWord]);
 
   const handleReset = useCallback(async () => {
     if (!window.confirm('Are you sure you want to reset all progress? This will mark all words as unlearned.')) {
