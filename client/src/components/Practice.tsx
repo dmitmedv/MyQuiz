@@ -163,39 +163,7 @@ const Practice: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Practice Mode</h2>
-        <p className="text-gray-600">Choose your practice mode and test your knowledge.</p>
       </div>
-
-      {/* Mode Selection */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Practice Mode</h3>
-          <div className="flex items-center space-x-2">
-            <span className={`text-sm ${practiceMode === 'word-translation' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
-              Word → Translation
-            </span>
-            <button
-              onClick={() => setPracticeMode(practiceMode === 'word-translation' ? 'translation-word' : 'word-translation')}
-              disabled={loading}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                practiceMode === 'translation-word' ? 'bg-primary-600' : 'bg-gray-200'
-              } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  practiceMode === 'translation-word' ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-sm ${practiceMode === 'translation-word' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
-              Translation → Word
-            </span>
-          </div>
-        </div>
-      </div>
-
-
 
       {/* Completion State */}
       {isCompleted && (
@@ -228,16 +196,11 @@ const Practice: React.FC = () => {
       {currentWord && !error && !isCompleted && (
         <div className="card">
           <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">{getInstructionText()}</h3>
             <div className="text-4xl font-bold text-primary-600 mb-4">
               {/* Display flag for the language of the word/phrase being shown */}
               <span className="mr-2">{getLanguageFlag(currentWord.language)}</span>
               {getDisplayText()}
             </div>
-            {/* Show language name below the word/phrase */}
-            <p className="text-sm text-gray-500">
-              Language: {getLanguageName(currentWord.language)}
-            </p>
           </div>
 
           {!result ? (
@@ -309,13 +272,32 @@ const Practice: React.FC = () => {
         </div>
       )}
 
-      <div className="mt-6 text-center">
-        <button
-          onClick={handleReset}
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
-        >
-          Reset all progress
-        </button>
+      {/* Mode Selection - Moved below and made smaller */}
+      <div className="card mt-6 p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-gray-900">Practice Mode</h3>
+          <div className="flex items-center space-x-2">
+            <span className={`text-xs ${practiceMode === 'word-translation' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
+              Word → Translation
+            </span>
+            <button
+              onClick={() => setPracticeMode(practiceMode === 'word-translation' ? 'translation-word' : 'word-translation')}
+              disabled={loading}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                practiceMode === 'translation-word' ? 'bg-primary-600' : 'bg-gray-200'
+              } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <span
+                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                  practiceMode === 'translation-word' ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs ${practiceMode === 'translation-word' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
+              Translation → Word
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
