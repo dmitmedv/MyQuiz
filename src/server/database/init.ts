@@ -50,8 +50,21 @@ export async function initializeDatabase(): Promise<void> {
           return;
         }
 
-        console.log('Database tables created successfully');
-        resolve();
+        // Create unique index to prevent duplicate words in the same language
+        const createUniqueIndex = `
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_vocabulary_word_language 
+          ON vocabulary(word, language)
+        `;
+
+        db.run(createUniqueIndex, (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          console.log('Database tables and indexes created successfully');
+          resolve();
+        });
       });
     });
   });

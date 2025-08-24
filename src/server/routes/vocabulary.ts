@@ -51,26 +51,48 @@ router.post('/', (req, res) => {
   // Default to serbian if no language is specified
   const defaultLanguage = language || 'serbian';
   
-  const query = `
-    INSERT INTO vocabulary (word, translation, language) 
-    VALUES (?, ?, ?)
+  // First check if the word already exists in the same language
+  const checkDuplicateQuery = `
+    SELECT id, word, translation, language FROM vocabulary 
+    WHERE word = ? AND language = ?
   `;
   
-  db.run(query, [word.trim(), translation.trim(), defaultLanguage], function(err) {
+  db.get(checkDuplicateQuery, [word.trim(), defaultLanguage], (err, existingItem: any) => {
     if (err) {
-      console.error('Error creating vocabulary item:', err);
-      return res.status(500).json({ error: 'Failed to create vocabulary item' });
+      console.error('Error checking for duplicates:', err);
+      return res.status(500).json({ error: 'Failed to check for duplicates' });
     }
     
-    // Fetch the created item
-    const selectQuery = 'SELECT * FROM vocabulary WHERE id = ?';
-    db.get(selectQuery, [this.lastID], (err, row: VocabularyItem) => {
+    if (existingItem) {
+      return res.status(409).json({ 
+        error: 'Word already exists', 
+        details: `"${word}" already exists in ${defaultLanguage} with translation "${existingItem.translation || 'unknown'}"`,
+        existingItem 
+      });
+    }
+    
+    // If no duplicate, proceed with insertion
+    const insertQuery = `
+      INSERT INTO vocabulary (word, translation, language) 
+      VALUES (?, ?, ?)
+    `;
+    
+    db.run(insertQuery, [word.trim(), translation.trim(), defaultLanguage], function(err) {
       if (err) {
-        console.error('Error fetching created vocabulary item:', err);
-        return res.status(500).json({ error: 'Failed to fetch created vocabulary item' });
+        console.error('Error creating vocabulary item:', err);
+        return res.status(500).json({ error: 'Failed to create vocabulary item' });
       }
       
-      res.status(201).json(row);
+      // Fetch the created item
+      const selectQuery = 'SELECT * FROM vocabulary WHERE id = ?';
+      db.get(selectQuery, [this.lastID], (err, row: VocabularyItem) => {
+        if (err) {
+          console.error('Error fetching created vocabulary item:', err);
+          return res.status(500).json({ error: 'Failed to fetch created vocabulary item' });
+        }
+        
+        res.status(201).json(row);
+      });
     });
   });
 });

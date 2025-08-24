@@ -8,6 +8,8 @@ const AddVocabulary: React.FC = () => {
   const [form, setForm] = useState({ word: '', translation: '', language: 'serbian' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateDetails, setDuplicateDetails] = useState<string | null>(null);
+  const [existingWord, setExistingWord] = useState<{ word: string; translation: string } | null>(null);
 
   // Available languages with their flags
   const languages = [
@@ -15,6 +17,30 @@ const AddVocabulary: React.FC = () => {
     { value: 'russian', flag: '🇷🇺', name: 'Russian' },
     { value: 'english', flag: '🇬🇧', name: 'English' }
   ];
+
+  // Check if word already exists in the selected language
+  const checkExistingWord = async (word: string, language: string) => {
+    if (!word.trim()) {
+      setExistingWord(null);
+      return;
+    }
+
+    try {
+      const vocabulary = await apiService.getVocabulary();
+      const existing = vocabulary.find(
+        item => item.word.toLowerCase() === word.toLowerCase() && item.language === language
+      );
+      
+      if (existing) {
+        setExistingWord({ word: existing.word, translation: existing.translation });
+      } else {
+        setExistingWord(null);
+      }
+    } catch (err) {
+      console.error('Error checking for existing word:', err);
+      setExistingWord(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +61,22 @@ const AddVocabulary: React.FC = () => {
       
       // Reset form and redirect to vocabulary list
       setForm({ word: '', translation: '', language: 'serbian' });
+      setError(null);
+      setDuplicateDetails(null);
+      setExistingWord(null);
       navigate('/');
-    } catch (err) {
-      setError('Failed to add vocabulary item');
+    } catch (err: any) {
+      // Handle different types of errors with more specific messages
+      if (err.message && err.message.includes('already exists')) {
+        setError('This word already exists in your vocabulary list');
+        setDuplicateDetails(err.details || null);
+      } else if (err.message && err.message.includes('Word already exists')) {
+        setError('This word already exists in your vocabulary list');
+        setDuplicateDetails(err.details || null);
+      } else {
+        setError('Failed to add vocabulary item');
+        setDuplicateDetails(null);
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -47,8 +86,21 @@ const AddVocabulary: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
+    // Clear error and duplicate details when user starts typing
     if (error) setError(null);
+    if (duplicateDetails) setDuplicateDetails(null);
+    if (existingWord) setExistingWord(null);
+    
+    // Check for existing word when word or language changes
+    if (name === 'word' || name === 'language') {
+      const wordToCheck = name === 'word' ? value : form.word;
+      const languageToCheck = name === 'language' ? value : form.language;
+      
+      // Debounce the check to avoid too many API calls
+      setTimeout(() => {
+        checkExistingWord(wordToCheck, languageToCheck);
+      }, 500);
+    }
   };
 
   return (
@@ -62,7 +114,12 @@ const AddVocabulary: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg">
-              {error}
+              <div className="font-medium">{error}</div>
+              {duplicateDetails && (
+                <div className="mt-2 text-sm text-error-600">
+                  {duplicateDetails}
+                </div>
+              )}
             </div>
           )}
 
@@ -101,6 +158,11 @@ const AddVocabulary: React.FC = () => {
               disabled={loading}
               autoFocus
             />
+            {existingWord && (
+              <div className="mt-2 bg-yellow-50 border border-yellow-200 text-yellow-700 px-3 py-2 rounded-md text-sm">
+                ⚠️ This word already exists in {form.language} with translation: <strong>"{existingWord.translation}"</strong>
+              </div>
+            )}
           </div>
 
           <div>
@@ -155,6 +217,7 @@ const AddVocabulary: React.FC = () => {
           <li>• Be consistent with your translations</li>
           <li>• Add words you encounter in your daily learning</li>
           <li>• Practice regularly to mark words as learned</li>
+          <li>• Each word can only exist once per language</li>
         </ul>
       </div>
     </div>
