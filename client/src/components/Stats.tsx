@@ -3,7 +3,14 @@ import { PracticeStats, VocabularyItem } from '../types';
 import { apiService } from '../services/api';
 
 const Stats: React.FC = () => {
-  const [stats, setStats] = useState<PracticeStats>({ total: 0, learned: 0, unlearned: 0, progress: 0 });
+  const [stats, setStats] = useState<PracticeStats>({ 
+    total: 0, 
+    learned: 0, 
+    unlearned: 0, 
+    progress: 0, 
+    total_correct_attempts: 0, 
+    total_wrong_attempts: 0 
+  });
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +75,7 @@ const Stats: React.FC = () => {
       {/* Progress Overview */}
       <div className="card">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Progress Overview</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-600 mb-1">{stats.total}</div>
             <div className="text-sm text-gray-500">Total Words</div>
@@ -84,6 +91,14 @@ const Stats: React.FC = () => {
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600 mb-1">{stats.progress}%</div>
             <div className="text-sm text-gray-500">Progress</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-success-600 mb-1">{stats.total_correct_attempts || 0}</div>
+            <div className="text-sm text-gray-500">Total Correct</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-error-600 mb-1">{stats.total_wrong_attempts || 0}</div>
+            <div className="text-sm text-gray-500">Total Wrong</div>
           </div>
         </div>
 

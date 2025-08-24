@@ -9,7 +9,7 @@ export const db = new sqlite3.Database(dbPath);
 
 export async function initializeDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Create vocabulary table with language field
+    // Create vocabulary table with language field and attempt tracking
     const createVocabularyTable = `
       CREATE TABLE IF NOT EXISTS vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,6 +17,8 @@ export async function initializeDatabase(): Promise<void> {
         translation TEXT NOT NULL,
         language TEXT NOT NULL DEFAULT 'serbian',
         learned BOOLEAN DEFAULT 0,
+        correct_attempts INTEGER DEFAULT 0,
+        wrong_attempts INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -35,6 +37,25 @@ export async function initializeDatabase(): Promise<void> {
           console.warn('Warning: Could not add language column:', err.message);
         } else {
           console.log('Language column added successfully. Existing items will use default language: serbian');
+        }
+      });
+
+      // Add attempt tracking columns if they don't exist (for existing databases)
+      db.run("ALTER TABLE vocabulary ADD COLUMN correct_attempts INTEGER DEFAULT 0", (err) => {
+        // Ignore error if column already exists
+        if (err && !err.message.includes('duplicate column name')) {
+          console.warn('Warning: Could not add correct_attempts column:', err.message);
+        } else {
+          console.log('Correct attempts column added successfully. Existing items will start with 0 attempts.');
+        }
+      });
+
+      db.run("ALTER TABLE vocabulary ADD COLUMN wrong_attempts INTEGER DEFAULT 0", (err) => {
+        // Ignore error if column already exists
+        if (err && !err.message.includes('duplicate column name')) {
+          console.warn('Warning: Could not add wrong_attempts column:', err.message);
+        } else {
+          console.log('Wrong attempts column added successfully. Existing items will start with 0 attempts.');
         }
       });
 

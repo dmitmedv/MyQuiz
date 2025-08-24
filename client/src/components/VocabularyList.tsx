@@ -9,7 +9,14 @@ const VocabularyList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ word: '', translation: '', language: 'serbian' });
-  const [stats, setStats] = useState<PracticeStats>({ total: 0, unlearned: 0, learned: 0, progress: 0 });
+  const [stats, setStats] = useState<PracticeStats>({ 
+    total: 0, 
+    unlearned: 0, 
+    learned: 0, 
+    progress: 0, 
+    total_correct_attempts: 0, 
+    total_wrong_attempts: 0 
+  });
 
   // Available languages for editing
   const languages = [
@@ -129,6 +136,26 @@ const VocabularyList: React.FC = () => {
     setEditForm({ word: '', translation: '', language: 'serbian' });
   };
 
+  const handleResetAttempts = async (item: VocabularyItem) => {
+    if (!window.confirm(`Reset attempt counts for "${item.word}"? This will set both correct and wrong attempts to 0.`)) {
+      return;
+    }
+
+    try {
+      const result = await apiService.resetAttempts(item.id);
+      // Update the vocabulary item with reset attempt counts
+      setVocabulary(vocabulary.map(v => 
+        v.id === item.id ? result.item : v
+      ));
+      // Refresh stats after resetting attempts
+      await loadStats();
+      setError(null);
+    } catch (err) {
+      setError('Failed to reset attempt counts');
+      console.error(err);
+    }
+  };
+
   const toggleLearned = async (item: VocabularyItem) => {
     try {
       const updatedItem = await apiService.updateVocabularyItem(item.id, {
@@ -176,7 +203,7 @@ const VocabularyList: React.FC = () => {
       {/* Statistics Panel */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Progress</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-primary-600">{stats.total}</div>
             <div className="text-sm text-gray-500">Total Words</div>
@@ -192,6 +219,14 @@ const VocabularyList: React.FC = () => {
           <div>
             <div className="text-2xl font-bold text-blue-600">{stats.progress}%</div>
             <div className="text-sm text-gray-500">Progress</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-success-600">{stats.total_correct_attempts || 0}</div>
+            <div className="text-sm text-gray-500">Total Correct</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-error-600">{stats.total_wrong_attempts || 0}</div>
+            <div className="text-sm text-gray-500">Total Wrong</div>
           </div>
         </div>
       </div>
@@ -212,11 +247,12 @@ const VocabularyList: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {/* Table header */}
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-            <div className="grid grid-cols-12 gap-4 items-center">
+            <div className="grid grid-cols-14 gap-4 items-center">
               <div className="col-span-3 text-sm font-medium text-gray-700">Word</div>
               <div className="col-span-3 text-sm font-medium text-gray-700">Translation</div>
               <div className="col-span-2 text-sm font-medium text-gray-700">Language</div>
               <div className="col-span-2 text-sm font-medium text-gray-700">Status</div>
+              <div className="col-span-2 text-sm font-medium text-gray-700">Attempts</div>
               <div className="col-span-2 text-sm font-medium text-gray-700">Actions</div>
             </div>
           </div>
@@ -265,7 +301,7 @@ const VocabularyList: React.FC = () => {
                 </div>
               ) : (
                 // Display mode - compact list row
-                <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="grid grid-cols-14 gap-4 items-center">
                   <div className="col-span-3">
                     <span className="font-medium text-gray-900">{item.word}</span>
                   </div>
@@ -291,6 +327,26 @@ const VocabularyList: React.FC = () => {
                     </button>
                   </div>
                   <div className="col-span-2">
+                    <div className="text-sm text-gray-600">
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-success-600 font-medium">✓ {item.correct_attempts || 0}</span>
+                          <span className="text-error-600 font-medium">✗ {item.wrong_attempts || 0}</span>
+                        </div>
+                        {((item.correct_attempts || 0) + (item.wrong_attempts || 0)) > 0 && (
+                          <div className="text-xs text-gray-500">
+                            {item.correct_attempts && item.wrong_attempts 
+                              ? `${Math.round((item.correct_attempts / (item.correct_attempts + item.wrong_attempts)) * 100)}% success`
+                              : item.correct_attempts 
+                                ? '100% success' 
+                                : '0% success'
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
                     <div className="flex space-x-1">
                       <button
                         onClick={() => handleEdit(item)}
@@ -298,6 +354,13 @@ const VocabularyList: React.FC = () => {
                         title="Edit word"
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => handleResetAttempts(item)}
+                        className="btn-warning px-2 py-1 text-xs"
+                        title="Reset attempts"
+                      >
+                        Reset
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
@@ -312,6 +375,35 @@ const VocabularyList: React.FC = () => {
               )}
             </div>
           ))}
+          
+          {/* Summary row */}
+          {vocabulary.length > 0 && (
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+              <div className="grid grid-cols-14 gap-4 items-center text-sm">
+                <div className="col-span-9 text-gray-600 font-medium">
+                  Summary
+                </div>
+                <div className="col-span-2 text-center">
+                  <div className="text-gray-600">
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-success-600 font-medium">
+                          ✓ {vocabulary.reduce((sum, item) => sum + (item.correct_attempts || 0), 0)}
+                        </span>
+                        <span className="text-error-600 font-medium">
+                          ✗ {vocabulary.reduce((sum, item) => sum + (item.wrong_attempts || 0), 0)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Total attempts across all words
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-span-3"></div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

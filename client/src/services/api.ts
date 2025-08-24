@@ -65,6 +65,16 @@ class ApiService {
     }
   }
 
+  async resetAttempts(id: number): Promise<{ message: string; item: VocabularyItem }> {
+    const response = await fetch(`${API_BASE}/vocabulary/${id}/reset-attempts`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to reset attempt counts');
+    }
+    return response.json();
+  }
+
   // Practice endpoints
   async getPracticeWord(mode: PracticeMode = 'word-translation'): Promise<PracticeSession> {
     const response = await fetch(`${API_BASE}/practice/word?mode=${mode}`);

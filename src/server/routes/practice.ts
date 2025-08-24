@@ -127,21 +127,39 @@ router.post('/check', (req, res) => {
       ...(shouldShowOriginal && { originalAnswer })
     };
 
-    // If correct, mark as learned
+    // Update attempt counts and mark as learned if correct
+    let updateQuery: string;
+    let updateParams: any[];
+
     if (isCorrect) {
-      const updateQuery = 'UPDATE vocabulary SET learned = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-      
-      db.run(updateQuery, [id], (err) => {
-        if (err) {
-          console.error('Error marking word as learned:', err);
-          // Still return the result even if marking as learned fails
-        }
-        
-        res.json(result);
-      });
+      // Increment correct attempts and mark as learned
+      updateQuery = `
+        UPDATE vocabulary 
+        SET learned = 1, 
+            correct_attempts = correct_attempts + 1, 
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `;
+      updateParams = [id];
     } else {
-      res.json(result);
+      // Increment wrong attempts
+      updateQuery = `
+        UPDATE vocabulary 
+        SET wrong_attempts = wrong_attempts + 1, 
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `;
+      updateParams = [id];
     }
+    
+    db.run(updateQuery, updateParams, (err) => {
+      if (err) {
+        console.error('Error updating attempt counts:', err);
+        // Still return the result even if updating fails
+      }
+      
+      res.json(result);
+    });
   });
 });
 
@@ -151,11 +169,19 @@ router.get('/stats', (req, res) => {
     SELECT 
       COUNT(*) as total,
       SUM(CASE WHEN learned = 1 THEN 1 ELSE 0 END) as learned,
-      SUM(CASE WHEN learned = 0 THEN 1 ELSE 0 END) as unlearned
+      SUM(CASE WHEN learned = 0 THEN 1 ELSE 0 END) as unlearned,
+      SUM(correct_attempts) as total_correct_attempts,
+      SUM(wrong_attempts) as total_wrong_attempts
     FROM vocabulary
   `;
 
-  db.get(statsQuery, [], (err, row: { total: number; learned: number; unlearned: number }) => {
+  db.get(statsQuery, [], (err, row: { 
+    total: number; 
+    learned: number; 
+    unlearned: number; 
+    total_correct_attempts: number; 
+    total_wrong_attempts: number; 
+  }) => {
     if (err) {
       console.error('Error fetching practice stats:', err);
       return res.status(500).json({ error: 'Failed to fetch practice statistics' });
@@ -165,7 +191,9 @@ router.get('/stats', (req, res) => {
       total: row.total,
       learned: row.learned,
       unlearned: row.unlearned,
-      progress: row.total > 0 ? Math.round((row.learned / row.total) * 100) : 0
+      progress: row.total > 0 ? Math.round((row.learned / row.total) * 100) : 0,
+      total_correct_attempts: row.total_correct_attempts || 0,
+      total_wrong_attempts: row.total_wrong_attempts || 0
     });
   });
 });

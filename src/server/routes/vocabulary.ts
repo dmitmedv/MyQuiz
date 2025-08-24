@@ -177,4 +177,39 @@ router.delete('/:id', (req, res) => {
   });
 });
 
+// Reset attempt counts for a vocabulary item
+router.post('/:id/reset-attempts', (req, res) => {
+  const { id } = req.params;
+  
+  const query = `
+    UPDATE vocabulary 
+    SET correct_attempts = 0, 
+        wrong_attempts = 0, 
+        updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ?
+  `;
+  
+  db.run(query, [id], function(err) {
+    if (err) {
+      console.error('Error resetting attempt counts:', err);
+      return res.status(500).json({ error: 'Failed to reset attempt counts' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Vocabulary item not found' });
+    }
+    
+    // Fetch the updated item
+    const selectQuery = 'SELECT * FROM vocabulary WHERE id = ?';
+    db.get(selectQuery, [id], (err, row: VocabularyItem) => {
+      if (err) {
+        console.error('Error fetching updated vocabulary item:', err);
+        return res.status(500).json({ error: 'Failed to fetch updated vocabulary item' });
+      }
+      
+      res.json({ message: 'Attempt counts reset successfully', item: row });
+    });
+  });
+});
+
 export { router as vocabularyRoutes }; 
