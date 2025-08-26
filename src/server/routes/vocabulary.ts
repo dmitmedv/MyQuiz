@@ -50,7 +50,7 @@ router.get('/:id', (req, res) => {
 
 // Create new vocabulary item for the authenticated user
 router.post('/', (req, res) => {
-  const { word, translation, language }: CreateVocabularyRequest = req.body;
+  const { word, translation, language, translation_language }: CreateVocabularyRequest = req.body;
   const userId = req.user!.id;
   
   if (!word || !translation) {
@@ -59,10 +59,12 @@ router.post('/', (req, res) => {
   
   // Default to serbian if no language is specified
   const defaultLanguage = language || 'serbian';
+  // Default to english if no translation_language is specified
+  const defaultTranslationLanguage = translation_language || 'english';
   
   // First check if the word already exists in the same language for this user
   const checkDuplicateQuery = `
-    SELECT id, word, translation, language FROM vocabulary 
+    SELECT id, word, translation, language, translation_language FROM vocabulary 
     WHERE word = ? AND language = ? AND user_id = ?
   `;
   
@@ -82,11 +84,11 @@ router.post('/', (req, res) => {
     
     // If no duplicate, proceed with insertion
     const insertQuery = `
-      INSERT INTO vocabulary (word, translation, language, user_id) 
-      VALUES (?, ?, ?, ?)
+      INSERT INTO vocabulary (word, translation, language, translation_language, user_id) 
+      VALUES (?, ?, ?, ?, ?)
     `;
     
-    db.run(insertQuery, [word.trim(), translation.trim(), defaultLanguage, userId], function(err) {
+    db.run(insertQuery, [word.trim(), translation.trim(), defaultLanguage, defaultTranslationLanguage, userId], function(err) {
       if (err) {
         console.error('Error creating vocabulary item:', err);
         return res.status(500).json({ error: 'Failed to create vocabulary item' });
@@ -128,6 +130,11 @@ router.put('/:id', (req, res) => {
   if (updates.language !== undefined) {
     setClause.push('language = ?');
     values.push(updates.language);
+  }
+  
+  if (updates.translation_language !== undefined) {
+    setClause.push('translation_language = ?');
+    values.push(updates.translation_language);
   }
   
   if (updates.learned !== undefined) {

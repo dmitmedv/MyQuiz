@@ -11,6 +11,7 @@ export interface VocabularyItem {
   word: string;
   translation: string;
   language: string; // Language of the word/phrase (serbian, russian, english)
+  translation_language: string; // Language of the translation (english, serbian, russian)
   learned: boolean;
   correct_attempts: number; // Number of correct practice attempts
   wrong_attempts: number; // Number of wrong practice attempts
@@ -39,12 +40,14 @@ export interface CreateVocabularyRequest {
   word: string;
   translation: string;
   language: string; // Language of the word/phrase
+  translation_language: string; // Language of the translation
 }
 
 export interface UpdateVocabularyRequest {
   word?: string;
   translation?: string;
   language?: string; // Language of the word/phrase
+  translation_language?: string; // Language of the translation
   learned?: boolean;
 }
 
@@ -56,6 +59,7 @@ export interface PracticeSession {
   word: string;
   translation: string;
   language: string; // Language of the word/phrase
+  translation_language: string; // Language of the translation
   mode: PracticeMode;
 }
 

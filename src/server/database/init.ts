@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import { addTranslationLanguageColumn } from './add-translation-language';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -35,6 +36,7 @@ export async function initializeDatabase(): Promise<void> {
           word TEXT NOT NULL,
           translation TEXT NOT NULL,
           language TEXT NOT NULL DEFAULT 'serbian',
+          translation_language TEXT NOT NULL DEFAULT 'english',
           learned BOOLEAN DEFAULT 0,
           correct_attempts INTEGER DEFAULT 0,
           wrong_attempts INTEGER DEFAULT 0,
@@ -88,6 +90,17 @@ export async function initializeDatabase(): Promise<void> {
             console.warn('Warning: Could not add user_id column:', err.message);
           } else {
             console.log('User_id column added successfully. Existing items will be assigned to user_id 1.');
+          }
+        });
+
+        // Add translation_language column if it doesn't exist (for existing databases)
+        // Default to 'english' for translations
+        db.run("ALTER TABLE vocabulary ADD COLUMN translation_language TEXT DEFAULT 'english'", (err) => {
+          // Ignore error if column already exists
+          if (err && !err.message.includes('duplicate column name')) {
+            console.warn('Warning: Could not add translation_language column:', err.message);
+          } else {
+            console.log('Translation_language column added successfully. Existing translations will default to english.');
           }
         });
 

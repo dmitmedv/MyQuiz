@@ -5,7 +5,7 @@ import { apiService } from '../services/api';
 
 const AddVocabulary: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ word: '', translation: '', language: 'serbian' });
+  const [form, setForm] = useState({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateDetails, setDuplicateDetails] = useState<string | null>(null);
@@ -56,11 +56,12 @@ const AddVocabulary: React.FC = () => {
       await apiService.createVocabularyItem({
         word: form.word.trim(),
         translation: form.translation.trim(),
-        language: form.language
+        language: form.language,
+        translation_language: form.translation_language
       });
       
       // Reset form and redirect to vocabulary list
-      setForm({ word: '', translation: '', language: 'serbian' });
+      setForm({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
       setError(null);
       setDuplicateDetails(null);
       setExistingWord(null);
@@ -123,24 +124,46 @@ const AddVocabulary: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
-              Language
-            </label>
-            <select
-              id="language"
-              name="language"
-              value={form.language}
-              onChange={handleInputChange}
-              className="input"
-              disabled={loading}
-            >
-              {languages.map(lang => (
-                <option key={lang.value} value={lang.value}>
-                  {lang.flag} {lang.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
+                Word Language
+              </label>
+              <select
+                id="language"
+                name="language"
+                value={form.language}
+                onChange={handleInputChange}
+                className="input"
+                disabled={loading}
+              >
+                {languages.map(lang => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="translation_language" className="block text-sm font-medium text-gray-700 mb-2">
+                Translation Language
+              </label>
+              <select
+                id="translation_language"
+                name="translation_language"
+                value={form.translation_language}
+                onChange={handleInputChange}
+                className="input"
+                disabled={loading}
+              >
+                {languages.map(lang => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -212,7 +235,7 @@ const AddVocabulary: React.FC = () => {
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Tips</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Choose the language of the foreign word you're adding</li>
+          <li>• Choose the language of the word and its translation</li>
           <li>• You can add single words or entire phrases</li>
           <li>• Be consistent with your translations</li>
           <li>• Add words you encounter in your daily learning</li>

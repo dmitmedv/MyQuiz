@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 import { apiService } from '../services/api';
-import { getLanguageFlag, getLanguageName } from '../utils/flags';
+import { getLanguageFlag } from '../utils/flags';
 
 const Practice: React.FC = () => {
   const [currentWord, setCurrentWord] = useState<PracticeSession | null>(null);
@@ -153,12 +153,13 @@ const Practice: React.FC = () => {
     return practiceMode === 'word-translation' ? currentWord.word : currentWord.translation;
   };
 
-  // Helper function to get the instruction text based on practice mode
-  const getInstructionText = () => {
-    return practiceMode === 'word-translation' 
-      ? 'Translate this word:' 
-      : 'What is the foreign word for:';
+  // Helper function to get the language of the displayed text based on practice mode
+  const getDisplayLanguage = () => {
+    if (!currentWord) return 'serbian'; // default fallback
+    return practiceMode === 'word-translation' ? currentWord.language : currentWord.translation_language;
   };
+
+
 
   if (loading && !currentWord) {
     return (
@@ -206,7 +207,7 @@ const Practice: React.FC = () => {
           <div className="text-center mb-6">
             <div className="text-4xl font-bold text-primary-600 mb-4">
               {/* Display flag for the language of the word/phrase being shown */}
-              <span className="mr-2">{getLanguageFlag(currentWord.language)}</span>
+              <span className="mr-2">{getLanguageFlag(getDisplayLanguage())}</span>
               {getDisplayText()}
             </div>
           </div>

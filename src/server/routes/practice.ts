@@ -46,14 +46,14 @@ router.get('/word', (req, res) => {
   const userId = req.user!.id;
   
   const query = `
-    SELECT id, word, translation, language 
+    SELECT id, word, translation, language, translation_language 
     FROM vocabulary 
     WHERE learned = 0 AND user_id = ?
     ORDER BY RANDOM() 
     LIMIT 1
   `;
 
-  db.get(query, [userId], (err, row: { id: number; word: string; translation: string; language: string }) => {
+  db.get(query, [userId], (err, row: { id: number; word: string; translation: string; language: string; translation_language: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -89,9 +89,9 @@ router.post('/check', (req, res) => {
   }
 
   // Get the word and translation (only if it belongs to the authenticated user)
-  const getWordQuery = 'SELECT word, translation FROM vocabulary WHERE id = ? AND user_id = ?';
+  const getWordQuery = 'SELECT word, translation, language, translation_language FROM vocabulary WHERE id = ? AND user_id = ?';
   
-  db.get(getWordQuery, [id, userId], (err, row: { word: string; translation: string }) => {
+  db.get(getWordQuery, [id, userId], (err, row: { word: string; translation: string; language: string; translation_language: string }) => {
     if (err) {
       console.error('Error fetching word for checking:', err);
       return res.status(500).json({ error: 'Failed to check answer' });
