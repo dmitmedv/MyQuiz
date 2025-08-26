@@ -26,6 +26,15 @@ if (NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../client/build')));
 }
 
+// Health check endpoint (public, no authentication required)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vocabulary', vocabularyRoutes);

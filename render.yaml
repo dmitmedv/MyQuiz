@@ -13,7 +13,7 @@ services:
         value: "false"
       - key: PORT
         value: 10000
-    healthCheckPath: /api/vocabulary
+    healthCheckPath: /health
     autoDeploy: true
     plan: starter
     disk:
