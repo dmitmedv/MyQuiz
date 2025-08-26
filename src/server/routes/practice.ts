@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../database/init';
 import { PracticeSession, PracticeResult, PracticeMode } from '../types';
+import { authenticateToken } from '../middleware/auth';
 
 /**
  * Normalize text by removing diacritical marks to allow flexible matching
@@ -29,7 +30,10 @@ function normalizeText(text: string): string {
 
 const router = Router();
 
-// Get a random word for practice (not learned)
+// Apply authentication middleware to all practice routes
+router.use(authenticateToken);
+
+// Get a random word for practice (not learned) for the authenticated user
 router.get('/word', (req, res) => {
   // Get practice mode from query parameter, default to 'word-translation'
   const mode = (req.query.mode as PracticeMode) || 'word-translation';
@@ -39,15 +43,17 @@ router.get('/word', (req, res) => {
     return res.status(400).json({ error: 'Invalid practice mode. Must be "word-translation" or "translation-word"' });
   }
 
+  const userId = req.user!.id;
+  
   const query = `
     SELECT id, word, translation, language 
     FROM vocabulary 
-    WHERE learned = 0 
+    WHERE learned = 0 AND user_id = ?
     ORDER BY RANDOM() 
     LIMIT 1
   `;
 
-  db.get(query, [], (err, row: { id: number; word: string; translation: string; language: string }) => {
+  db.get(query, [userId], (err, row: { id: number; word: string; translation: string; language: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -70,6 +76,7 @@ router.get('/word', (req, res) => {
 // Check answer and mark as learned if correct
 router.post('/check', (req, res) => {
   const { id, userTranslation, mode } = req.body;
+  const userId = req.user!.id;
 
   if (!id || userTranslation === undefined) {
     return res.status(400).json({ error: 'Word ID and user translation are required' });
@@ -81,10 +88,10 @@ router.post('/check', (req, res) => {
     return res.status(400).json({ error: 'Invalid practice mode' });
   }
 
-  // Get the word and translation
-  const getWordQuery = 'SELECT word, translation FROM vocabulary WHERE id = ?';
+  // Get the word and translation (only if it belongs to the authenticated user)
+  const getWordQuery = 'SELECT word, translation FROM vocabulary WHERE id = ? AND user_id = ?';
   
-  db.get(getWordQuery, [id], (err, row: { word: string; translation: string }) => {
+  db.get(getWordQuery, [id, userId], (err, row: { word: string; translation: string }) => {
     if (err) {
       console.error('Error fetching word for checking:', err);
       return res.status(500).json({ error: 'Failed to check answer' });
@@ -138,18 +145,18 @@ router.post('/check', (req, res) => {
         SET learned = 1, 
             correct_attempts = correct_attempts + 1, 
             updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ?
+        WHERE id = ? AND user_id = ?
       `;
-      updateParams = [id];
+      updateParams = [id, userId];
     } else {
       // Increment wrong attempts
       updateQuery = `
         UPDATE vocabulary 
         SET wrong_attempts = wrong_attempts + 1, 
             updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ?
+        WHERE id = ? AND user_id = ?
       `;
-      updateParams = [id];
+      updateParams = [id, userId];
     }
     
     db.run(updateQuery, updateParams, (err) => {
@@ -163,8 +170,10 @@ router.post('/check', (req, res) => {
   });
 });
 
-// Get practice statistics
+// Get practice statistics for the authenticated user
 router.get('/stats', (req, res) => {
+  const userId = req.user!.id;
+  
   const statsQuery = `
     SELECT 
       COUNT(*) as total,
@@ -173,9 +182,10 @@ router.get('/stats', (req, res) => {
       SUM(correct_attempts) as total_correct_attempts,
       SUM(wrong_attempts) as total_wrong_attempts
     FROM vocabulary
+    WHERE user_id = ?
   `;
 
-  db.get(statsQuery, [], (err, row: { 
+  db.get(statsQuery, [userId], (err, row: { 
     total: number; 
     learned: number; 
     unlearned: number; 
@@ -198,11 +208,12 @@ router.get('/stats', (req, res) => {
   });
 });
 
-// Reset all words to unlearned (for testing or restarting practice)
+// Reset all words to unlearned for the authenticated user (for testing or restarting practice)
 router.post('/reset', (req, res) => {
-  const resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP';
+  const userId = req.user!.id;
+  const resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
   
-  db.run(resetQuery, [], function(err) {
+  db.run(resetQuery, [userId], function(err) {
     if (err) {
       console.error('Error resetting practice progress:', err);
       return res.status(500).json({ error: 'Failed to reset practice progress' });

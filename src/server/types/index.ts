@@ -1,3 +1,12 @@
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  password_hash: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface VocabularyItem {
   id: number;
   word: string;
@@ -6,8 +15,25 @@ export interface VocabularyItem {
   learned: boolean;
   correct_attempts: number; // Number of correct practice attempts
   wrong_attempts: number; // Number of wrong practice attempts
+  user_id: number; // Foreign key to users table
   created_at: string;
   updated_at: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: Omit<User, 'password_hash'>;
+  token: string;
 }
 
 export interface CreateVocabularyRequest {

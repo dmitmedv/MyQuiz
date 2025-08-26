@@ -1,17 +1,24 @@
 import { Router } from 'express';
 import { db } from '../database/init';
 import { VocabularyItem, CreateVocabularyRequest, UpdateVocabularyRequest } from '../types';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Get all vocabulary items
+// Apply authentication middleware to all vocabulary routes
+router.use(authenticateToken);
+
+// Get all vocabulary items for the authenticated user
 router.get('/', (req, res) => {
+  const userId = req.user!.id; // user is guaranteed to exist due to authentication middleware
+  
   const query = `
     SELECT * FROM vocabulary 
+    WHERE user_id = ?
     ORDER BY created_at DESC
   `;
 
-  db.all(query, [], (err, rows: VocabularyItem[]) => {
+  db.all(query, [userId], (err, rows: VocabularyItem[]) => {
     if (err) {
       console.error('Error fetching vocabulary:', err);
       return res.status(500).json({ error: 'Failed to fetch vocabulary' });
@@ -20,13 +27,14 @@ router.get('/', (req, res) => {
   });
 });
 
-// Get vocabulary item by ID
+// Get vocabulary item by ID (only if it belongs to the authenticated user)
 router.get('/:id', (req, res) => {
   const { id } = req.params;
+  const userId = req.user!.id;
   
-  const query = 'SELECT * FROM vocabulary WHERE id = ?';
+  const query = 'SELECT * FROM vocabulary WHERE id = ? AND user_id = ?';
   
-  db.get(query, [id], (err, row: VocabularyItem) => {
+  db.get(query, [id, userId], (err, row: VocabularyItem) => {
     if (err) {
       console.error('Error fetching vocabulary item:', err);
       return res.status(500).json({ error: 'Failed to fetch vocabulary item' });
@@ -40,9 +48,10 @@ router.get('/:id', (req, res) => {
   });
 });
 
-// Create new vocabulary item
+// Create new vocabulary item for the authenticated user
 router.post('/', (req, res) => {
   const { word, translation, language }: CreateVocabularyRequest = req.body;
+  const userId = req.user!.id;
   
   if (!word || !translation) {
     return res.status(400).json({ error: 'Word and translation are required' });
@@ -51,13 +60,13 @@ router.post('/', (req, res) => {
   // Default to serbian if no language is specified
   const defaultLanguage = language || 'serbian';
   
-  // First check if the word already exists in the same language
+  // First check if the word already exists in the same language for this user
   const checkDuplicateQuery = `
     SELECT id, word, translation, language FROM vocabulary 
-    WHERE word = ? AND language = ?
+    WHERE word = ? AND language = ? AND user_id = ?
   `;
   
-  db.get(checkDuplicateQuery, [word.trim(), defaultLanguage], (err, existingItem: any) => {
+  db.get(checkDuplicateQuery, [word.trim(), defaultLanguage, userId], (err, existingItem: any) => {
     if (err) {
       console.error('Error checking for duplicates:', err);
       return res.status(500).json({ error: 'Failed to check for duplicates' });
@@ -73,11 +82,11 @@ router.post('/', (req, res) => {
     
     // If no duplicate, proceed with insertion
     const insertQuery = `
-      INSERT INTO vocabulary (word, translation, language) 
-      VALUES (?, ?, ?)
+      INSERT INTO vocabulary (word, translation, language, user_id) 
+      VALUES (?, ?, ?, ?)
     `;
     
-    db.run(insertQuery, [word.trim(), translation.trim(), defaultLanguage], function(err) {
+    db.run(insertQuery, [word.trim(), translation.trim(), defaultLanguage, userId], function(err) {
       if (err) {
         console.error('Error creating vocabulary item:', err);
         return res.status(500).json({ error: 'Failed to create vocabulary item' });
@@ -97,9 +106,10 @@ router.post('/', (req, res) => {
   });
 });
 
-// Update vocabulary item
+// Update vocabulary item (only if it belongs to the authenticated user)
 router.put('/:id', (req, res) => {
   const { id } = req.params;
+  const userId = req.user!.id;
   const updates: UpdateVocabularyRequest = req.body;
   
   const setClause: string[] = [];
@@ -132,7 +142,8 @@ router.put('/:id', (req, res) => {
   setClause.push('updated_at = CURRENT_TIMESTAMP');
   values.push(id);
   
-  const query = `UPDATE vocabulary SET ${setClause.join(', ')} WHERE id = ?`;
+  const query = `UPDATE vocabulary SET ${setClause.join(', ')} WHERE id = ? AND user_id = ?`;
+  values.push(userId);
   
   db.run(query, values, function(err) {
     if (err) {
@@ -157,13 +168,14 @@ router.put('/:id', (req, res) => {
   });
 });
 
-// Delete vocabulary item
+// Delete vocabulary item (only if it belongs to the authenticated user)
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
+  const userId = req.user!.id;
   
-  const query = 'DELETE FROM vocabulary WHERE id = ?';
+  const query = 'DELETE FROM vocabulary WHERE id = ? AND user_id = ?';
   
-  db.run(query, [id], function(err) {
+  db.run(query, [id, userId], function(err) {
     if (err) {
       console.error('Error deleting vocabulary item:', err);
       return res.status(500).json({ error: 'Failed to delete vocabulary item' });
@@ -177,19 +189,20 @@ router.delete('/:id', (req, res) => {
   });
 });
 
-// Reset attempt counts for a vocabulary item
+// Reset attempt counts for a vocabulary item (only if it belongs to the authenticated user)
 router.post('/:id/reset-attempts', (req, res) => {
   const { id } = req.params;
+  const userId = req.user!.id;
   
   const query = `
     UPDATE vocabulary 
     SET correct_attempts = 0, 
         wrong_attempts = 0, 
         updated_at = CURRENT_TIMESTAMP 
-    WHERE id = ?
+    WHERE id = ? AND user_id = ?
   `;
   
-  db.run(query, [id], function(err) {
+  db.run(query, [id, userId], function(err) {
     if (err) {
       console.error('Error resetting attempt counts:', err);
       return res.status(500).json({ error: 'Failed to reset attempt counts' });

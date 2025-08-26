@@ -11,9 +11,24 @@ import {
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
 
 class ApiService {
+  // Helper method to get auth headers
+  private getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  }
   // Vocabulary endpoints
   async getVocabulary(): Promise<VocabularyItem[]> {
-    const response = await fetch(`${API_BASE}/vocabulary`);
+    const response = await fetch(`${API_BASE}/vocabulary`, {
+      headers: this.getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch vocabulary');
     }
@@ -21,7 +36,9 @@ class ApiService {
   }
 
   async getVocabularyItem(id: number): Promise<VocabularyItem> {
-    const response = await fetch(`${API_BASE}/vocabulary/${id}`);
+    const response = await fetch(`${API_BASE}/vocabulary/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch vocabulary item');
     }
@@ -31,9 +48,7 @@ class ApiService {
   async createVocabularyItem(data: CreateVocabularyRequest): Promise<VocabularyItem> {
     const response = await fetch(`${API_BASE}/vocabulary`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) {
@@ -45,9 +60,7 @@ class ApiService {
   async updateVocabularyItem(id: number, data: UpdateVocabularyRequest): Promise<VocabularyItem> {
     const response = await fetch(`${API_BASE}/vocabulary/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
     });
     if (!response.ok) {
@@ -59,6 +72,7 @@ class ApiService {
   async deleteVocabularyItem(id: number): Promise<void> {
     const response = await fetch(`${API_BASE}/vocabulary/${id}`, {
       method: 'DELETE',
+      headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
       throw new Error('Failed to delete vocabulary item');
@@ -68,6 +82,7 @@ class ApiService {
   async resetAttempts(id: number): Promise<{ message: string; item: VocabularyItem }> {
     const response = await fetch(`${API_BASE}/vocabulary/${id}/reset-attempts`, {
       method: 'POST',
+      headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
       throw new Error('Failed to reset attempt counts');
@@ -77,7 +92,9 @@ class ApiService {
 
   // Practice endpoints
   async getPracticeWord(mode: PracticeMode = 'word-translation'): Promise<PracticeSession> {
-    const response = await fetch(`${API_BASE}/practice/word?mode=${mode}`);
+    const response = await fetch(`${API_BASE}/practice/word?mode=${mode}`, {
+      headers: this.getAuthHeaders(),
+    });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.error || 'Failed to fetch practice word';
@@ -89,9 +106,7 @@ class ApiService {
   async checkAnswer(id: number, userTranslation: string, mode: PracticeMode = 'word-translation'): Promise<PracticeResult> {
     const response = await fetch(`${API_BASE}/practice/check`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({ id, userTranslation, mode }),
     });
     if (!response.ok) {
@@ -101,7 +116,9 @@ class ApiService {
   }
 
   async getPracticeStats(): Promise<PracticeStats> {
-    const response = await fetch(`${API_BASE}/practice/stats`);
+    const response = await fetch(`${API_BASE}/practice/stats`, {
+      headers: this.getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch practice stats');
     }
@@ -111,6 +128,7 @@ class ApiService {
   async resetPractice(): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE}/practice/reset`, {
       method: 'POST',
+      headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
       throw new Error('Failed to reset practice');

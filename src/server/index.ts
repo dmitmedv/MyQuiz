@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { vocabularyRoutes } from './routes/vocabulary';
 import { practiceRoutes } from './routes/practice';
+import { authRoutes } from './routes/auth';
 import { initializeDatabase } from './database/init';
 
 const app = express();
@@ -26,6 +27,7 @@ if (NODE_ENV === 'production') {
 }
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/vocabulary', vocabularyRoutes);
 app.use('/api/practice', practiceRoutes);
 
