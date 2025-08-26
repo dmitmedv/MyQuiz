@@ -28,13 +28,50 @@ function normalizeText(text: string): string {
     .replace(/[ýÝ]/g, 'y');
 }
 
+/**
+ * Helper function to get all possible answers (translation + synonyms) for a vocabulary item
+ */
+async function getAllAnswersForVocabulary(vocabularyId: number): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT v.translation, GROUP_CONCAT(s.synonym) as synonyms
+      FROM vocabulary v
+      LEFT JOIN synonyms s ON v.id = s.vocabulary_id
+      WHERE v.id = ?
+      GROUP BY v.id
+    `;
+    
+    db.get(query, [vocabularyId], (err, row: { translation: string; synonyms: string | null }) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      if (!row) {
+        resolve([]);
+        return;
+      }
+      
+      const answers = [row.translation];
+      
+      // Add synonyms if they exist
+      if (row.synonyms) {
+        const synonymList = row.synonyms.split(',').filter(s => s.trim().length > 0);
+        answers.push(...synonymList);
+      }
+      
+      resolve(answers);
+    });
+  });
+}
+
 const router = Router();
 
 // Apply authentication middleware to all practice routes
 router.use(authenticateToken);
 
 // Get a random word for practice (not learned) for the authenticated user
-router.get('/word', (req, res) => {
+router.get('/word', async (req, res) => {
   // Get practice mode from query parameter, default to 'word-translation'
   const mode = (req.query.mode as PracticeMode) || 'word-translation';
   
@@ -53,7 +90,7 @@ router.get('/word', (req, res) => {
     LIMIT 1
   `;
 
-  db.get(query, [userId], (err, row: { id: number; word: string; translation: string; language: string; translation_language: string }) => {
+  db.get(query, [userId], async (err, row: { id: number; word: string; translation: string; language: string; translation_language: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -63,18 +100,32 @@ router.get('/word', (req, res) => {
       return res.status(404).json({ error: 'No unlearned words available for practice' });
     }
 
-    // Include the practice mode and language in the response
-    const practiceSession: PracticeSession = {
-      ...row,
-      mode
-    };
+    try {
+      // Get all possible answers (translation + synonyms) for this word
+      const allAnswers = await getAllAnswersForVocabulary(row.id);
+      
+      // Include the practice mode, language, and synonyms in the response
+      const practiceSession: PracticeSession = {
+        ...row,
+        mode,
+        synonyms: allAnswers.filter(answer => answer !== row.translation) // Exclude main translation from synonyms list
+      };
 
-    res.json(practiceSession);
+      res.json(practiceSession);
+    } catch (synonymError) {
+      console.error('Error fetching synonyms for practice:', synonymError);
+      // Return session without synonyms if there's an error
+      const practiceSession: PracticeSession = {
+        ...row,
+        mode
+      };
+      res.json(practiceSession);
+    }
   });
 });
 
 // Check answer and mark as learned if correct
-router.post('/check', (req, res) => {
+router.post('/check', async (req, res) => {
   const { id, userTranslation, mode } = req.body;
   const userId = req.user!.id;
 
@@ -91,7 +142,7 @@ router.post('/check', (req, res) => {
   // Get the word and translation (only if it belongs to the authenticated user)
   const getWordQuery = 'SELECT word, translation, language, translation_language FROM vocabulary WHERE id = ? AND user_id = ?';
   
-  db.get(getWordQuery, [id, userId], (err, row: { word: string; translation: string; language: string; translation_language: string }) => {
+  db.get(getWordQuery, [id, userId], async (err, row: { word: string; translation: string; language: string; translation_language: string }) => {
     if (err) {
       console.error('Error fetching word for checking:', err);
       return res.status(500).json({ error: 'Failed to check answer' });
@@ -101,72 +152,87 @@ router.post('/check', (req, res) => {
       return res.status(404).json({ error: 'Word not found' });
     }
 
-    let expectedAnswer: string;
-    let originalAnswer: string; // The answer with original diacriticals from database
-    let isCorrect: boolean;
+    try {
+      let possibleAnswers: string[];
+      let expectedAnswer: string;
+      
+      // Determine the possible answers based on practice mode
+      if (practiceMode === 'word-translation') {
+        // User should translate from word to translation
+        // Get all possible translations (main translation + synonyms)
+        const allTranslations = await getAllAnswersForVocabulary(parseInt(id));
+        possibleAnswers = allTranslations;
+        expectedAnswer = row.translation; // Show main translation as primary expected answer
+      } else {
+        // User should translate from translation to word  
+        // For translation-to-word mode, only the original word is valid (no synonyms for words themselves)
+        possibleAnswers = [row.word];
+        expectedAnswer = row.word;
+      }
 
-    // Determine the expected answer based on practice mode
-    if (practiceMode === 'word-translation') {
-      // User should translate from word to translation
-      expectedAnswer = row.translation;
-      originalAnswer = row.translation;
+      // Check if user's answer matches any of the possible answers
       // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
-      isCorrect = normalizeText(row.translation) === normalizeText(userTranslation);
-    } else {
-      // User should translate from translation to word  
-      expectedAnswer = row.word;
-      originalAnswer = row.word;
-      // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
-      isCorrect = normalizeText(row.word) === normalizeText(userTranslation);
-    }
+      let isCorrect = false;
+      let matchedAnswer = '';
+      
+      for (const answer of possibleAnswers) {
+        if (normalizeText(answer) === normalizeText(userTranslation)) {
+          isCorrect = true;
+          matchedAnswer = answer;
+          break;
+        }
+      }
 
-    // Check if the original answer differs from normalized versions
-    // Only include originalAnswer if it contains diacriticals that differ from user input
-    const shouldShowOriginal = isCorrect && 
-      normalizeText(originalAnswer) !== originalAnswer && 
-      normalizeText(userTranslation) !== originalAnswer;
+      // Check if the matched answer differs from normalized versions for diacriticals display
+      const shouldShowOriginal = isCorrect && 
+        normalizeText(matchedAnswer) !== matchedAnswer && 
+        normalizeText(userTranslation) !== matchedAnswer;
 
-    const result: PracticeResult = {
-      correct: isCorrect,
-      expectedTranslation: expectedAnswer,
-      userTranslation: userTranslation,
-      // Only include originalAnswer if it contains diacriticals and differs from user input
-      ...(shouldShowOriginal && { originalAnswer })
-    };
+      const result: PracticeResult = {
+        correct: isCorrect,
+        expectedTranslation: expectedAnswer,
+        userTranslation: userTranslation,
+        // Only include originalAnswer if it contains diacriticals and differs from user input
+        ...(shouldShowOriginal && { originalAnswer: matchedAnswer })
+      };
 
-    // Update attempt counts and mark as learned if correct
-    let updateQuery: string;
-    let updateParams: any[];
+      // Update attempt counts and mark as learned if correct
+      let updateQuery: string;
+      let updateParams: any[];
 
-    if (isCorrect) {
-      // Increment correct attempts and mark as learned
-      updateQuery = `
-        UPDATE vocabulary 
-        SET learned = 1, 
-            correct_attempts = correct_attempts + 1, 
-            updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ? AND user_id = ?
-      `;
-      updateParams = [id, userId];
-    } else {
-      // Increment wrong attempts
-      updateQuery = `
-        UPDATE vocabulary 
-        SET wrong_attempts = wrong_attempts + 1, 
-            updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ? AND user_id = ?
-      `;
-      updateParams = [id, userId];
-    }
-    
-    db.run(updateQuery, updateParams, (err) => {
-      if (err) {
-        console.error('Error updating attempt counts:', err);
-        // Still return the result even if updating fails
+      if (isCorrect) {
+        // Increment correct attempts and mark as learned
+        updateQuery = `
+          UPDATE vocabulary 
+          SET learned = 1, 
+              correct_attempts = correct_attempts + 1, 
+              updated_at = CURRENT_TIMESTAMP 
+          WHERE id = ? AND user_id = ?
+        `;
+        updateParams = [id, userId];
+      } else {
+        // Increment wrong attempts
+        updateQuery = `
+          UPDATE vocabulary 
+          SET wrong_attempts = wrong_attempts + 1, 
+              updated_at = CURRENT_TIMESTAMP 
+          WHERE id = ? AND user_id = ?
+        `;
+        updateParams = [id, userId];
       }
       
-      res.json(result);
-    });
+      db.run(updateQuery, updateParams, (err) => {
+        if (err) {
+          console.error('Error updating attempt counts:', err);
+          // Still return the result even if updating fails
+        }
+        
+        res.json(result);
+      });
+    } catch (synonymError) {
+      console.error('Error checking synonyms:', synonymError);
+      return res.status(500).json({ error: 'Failed to check answer' });
+    }
   });
 });
 

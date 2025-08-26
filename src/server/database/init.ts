@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { addTranslationLanguageColumn } from './add-translation-language';
+import { addSynonymsSupport } from './add-synonyms-support';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -151,7 +152,20 @@ export async function initializeDatabase(): Promise<void> {
             }
 
             console.log('Database tables and indexes created successfully');
-            resolve();
+            
+            // Run synonyms migration
+            addSynonymsSupport()
+              .then(() => {
+                console.log('Synonyms support migration completed successfully');
+                resolve();
+              })
+              .catch((migrationErr) => {
+                console.error('Synonyms migration failed:', migrationErr);
+                // Don't fail the entire initialization if migration fails
+                // Just log the error and continue
+                console.log('Continuing without synonyms support...');
+                resolve();
+              });
           });
         });
       });

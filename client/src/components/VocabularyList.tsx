@@ -9,6 +9,8 @@ const VocabularyList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ word: '', translation: '', language: 'serbian' });
+  const [editSynonyms, setEditSynonyms] = useState<string[]>([]);
+  const [currentEditSynonym, setCurrentEditSynonym] = useState('');
   const [stats, setStats] = useState<PracticeStats>({ 
     total: 0, 
     unlearned: 0, 
@@ -24,6 +26,28 @@ const VocabularyList: React.FC = () => {
     { value: 'russian', flag: '🇷🇺', name: 'Russian' },
     { value: 'english', flag: '🇬🇧', name: 'English' }
   ];
+
+  // Handle adding a new synonym during editing
+  const handleAddEditSynonym = () => {
+    const trimmedSynonym = currentEditSynonym.trim();
+    if (trimmedSynonym && !editSynonyms.includes(trimmedSynonym) && trimmedSynonym !== editForm.translation.trim()) {
+      setEditSynonyms(prev => [...prev, trimmedSynonym]);
+      setCurrentEditSynonym('');
+    }
+  };
+
+  // Handle removing a synonym during editing
+  const handleRemoveEditSynonym = (index: number) => {
+    setEditSynonyms(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle key press in synonym input during editing
+  const handleEditSynonymKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddEditSynonym();
+    }
+  };
 
   useEffect(() => {
     loadVocabulary();
@@ -62,7 +86,13 @@ const VocabularyList: React.FC = () => {
         totalWords: vocabulary.length,
         vocabulary: vocabulary.map(item => ({
           word: item.word,
-          translation: item.translation
+          translation: item.translation,
+          language: item.language,
+          translation_language: item.translation_language,
+          synonyms: item.synonyms || [],
+          learned: item.learned,
+          correct_attempts: item.correct_attempts,
+          wrong_attempts: item.wrong_attempts
         }))
       };
 
@@ -111,18 +141,26 @@ const VocabularyList: React.FC = () => {
   const handleEdit = (item: VocabularyItem) => {
     setEditingId(item.id);
     setEditForm({ word: item.word, translation: item.translation, language: item.language });
+    // Load existing synonyms for editing
+    setEditSynonyms(item.synonyms || []);
+    setCurrentEditSynonym('');
   };
 
   const handleSaveEdit = async () => {
     if (!editingId) return;
 
     try {
-      const updatedItem = await apiService.updateVocabularyItem(editingId, editForm);
+      const updatedItem = await apiService.updateVocabularyItem(editingId, {
+        ...editForm,
+        synonyms: editSynonyms.length > 0 ? editSynonyms : undefined // Include synonyms in update
+      });
       setVocabulary(vocabulary.map(item => 
         item.id === editingId ? updatedItem : item
       ));
       setEditingId(null);
       setEditForm({ word: '', translation: '', language: 'serbian' });
+      setEditSynonyms([]);
+      setCurrentEditSynonym('');
       // Refresh stats after editing an item
       await loadStats();
     } catch (err) {
@@ -134,6 +172,8 @@ const VocabularyList: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditForm({ word: '', translation: '', language: 'serbian' });
+    setEditSynonyms([]);
+    setCurrentEditSynonym('');
   };
 
   const handleResetAttempts = async (item: VocabularyItem) => {
@@ -266,7 +306,7 @@ const VocabularyList: React.FC = () => {
                   {editingId === item.id ? (
                     // Edit mode - full width form spanning all columns
                     <td colSpan={6} className="px-4 py-3">
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4">
                           <input
                             type="text"
@@ -294,11 +334,73 @@ const VocabularyList: React.FC = () => {
                             ))}
                           </select>
                         </div>
-                        <div className="flex space-x-2 justify-end">
-                          <button onClick={handleSaveEdit} className="btn-success px-4 py-1 text-sm">
-                            Save
+
+                        {/* Synonyms Section */}
+                        <div className="border-t border-gray-200 pt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Alternative Translations (Synonyms)
+                            <span className="text-xs text-gray-500 ml-2">(Optional)</span>
+                          </label>
+                          
+                          {/* Add Synonym Input */}
+                          <div className="flex space-x-2 mb-3">
+                            <input
+                              type="text"
+                              value={currentEditSynonym}
+                              onChange={(e) => setCurrentEditSynonym(e.target.value)}
+                              onKeyPress={handleEditSynonymKeyPress}
+                              className="input flex-1"
+                              placeholder="Enter alternative translation"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddEditSynonym}
+                              disabled={!currentEditSynonym.trim()}
+                              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1 text-sm"
+                            >
+                              Add
+                            </button>
+                          </div>
+
+                          {/* Display Current Synonyms */}
+                          {editSynonyms.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-600 mb-2">
+                                Alternative translations ({editSynonyms.length}):
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {editSynonyms.map((synonym, index) => (
+                                  <div
+                                    key={index}
+                                    className="bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center space-x-1"
+                                  >
+                                    <span>{synonym}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveEditSynonym(index)}
+                                      className="text-blue-600 hover:text-blue-800 ml-1"
+                                      title="Remove synonym"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {editSynonyms.length === 0 && (
+                            <p className="text-xs text-gray-500 italic mb-3">
+                              Add alternative translations that should also be accepted as correct answers.
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex space-x-2 justify-end border-t border-gray-200 pt-3">
+                          <button onClick={handleSaveEdit} className="btn-success px-4 py-2 text-sm">
+                            Save Changes
                           </button>
-                          <button onClick={handleCancelEdit} className="btn-secondary px-4 py-1 text-sm">
+                          <button onClick={handleCancelEdit} className="btn-secondary px-4 py-2 text-sm">
                             Cancel
                           </button>
                         </div>
@@ -311,7 +413,21 @@ const VocabularyList: React.FC = () => {
                         <span className="font-medium text-gray-900">{item.word}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-gray-600">{item.translation}</span>
+                        <div>
+                          <span className="text-gray-600">{item.translation}</span>
+                          {item.synonyms && item.synonyms.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {item.synonyms.map((synonym, synonymIndex) => (
+                                <span
+                                  key={synonymIndex}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 border border-blue-200"
+                                >
+                                  {synonym}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center text-sm text-gray-600">

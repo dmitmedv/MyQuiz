@@ -6,6 +6,8 @@ import { apiService } from '../services/api';
 const AddVocabulary: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
+  const [synonyms, setSynonyms] = useState<string[]>([]);
+  const [currentSynonym, setCurrentSynonym] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateDetails, setDuplicateDetails] = useState<string | null>(null);
@@ -17,6 +19,28 @@ const AddVocabulary: React.FC = () => {
     { value: 'russian', flag: '🇷🇺', name: 'Russian' },
     { value: 'english', flag: '🇬🇧', name: 'English' }
   ];
+
+  // Handle adding a new synonym
+  const handleAddSynonym = () => {
+    const trimmedSynonym = currentSynonym.trim();
+    if (trimmedSynonym && !synonyms.includes(trimmedSynonym) && trimmedSynonym !== form.translation.trim()) {
+      setSynonyms(prev => [...prev, trimmedSynonym]);
+      setCurrentSynonym('');
+    }
+  };
+
+  // Handle removing a synonym
+  const handleRemoveSynonym = (index: number) => {
+    setSynonyms(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle key press in synonym input
+  const handleSynonymKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSynonym();
+    }
+  };
 
   // Check if word already exists in the selected language
   const checkExistingWord = async (word: string, language: string) => {
@@ -57,11 +81,14 @@ const AddVocabulary: React.FC = () => {
         word: form.word.trim(),
         translation: form.translation.trim(),
         language: form.language,
-        translation_language: form.translation_language
+        translation_language: form.translation_language,
+        synonyms: synonyms.length > 0 ? synonyms : undefined // Only include synonyms if there are any
       });
       
       // Reset form and redirect to vocabulary list
       setForm({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
+      setSynonyms([]);
+      setCurrentSynonym('');
       setError(null);
       setDuplicateDetails(null);
       setExistingWord(null);
@@ -204,6 +231,70 @@ const AddVocabulary: React.FC = () => {
             />
           </div>
 
+          {/* Synonyms Section */}
+          <div>
+            <label htmlFor="synonyms" className="block text-sm font-medium text-gray-700 mb-2">
+              Alternative Translations (Synonyms)
+              <span className="text-xs text-gray-500 ml-2">(Optional)</span>
+            </label>
+            
+            {/* Add Synonym Input */}
+            <div className="flex space-x-2 mb-3">
+              <input
+                type="text"
+                id="synonyms"
+                value={currentSynonym}
+                onChange={(e) => setCurrentSynonym(e.target.value)}
+                onKeyPress={handleSynonymKeyPress}
+                className="input flex-1"
+                placeholder="Enter alternative translation"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={handleAddSynonym}
+                disabled={loading || !currentSynonym.trim()}
+                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Display Current Synonyms */}
+            {synonyms.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-600 mb-2">
+                  Alternative translations ({synonyms.length}):
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {synonyms.map((synonym, index) => (
+                    <div
+                      key={index}
+                      className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center space-x-2"
+                    >
+                      <span>{synonym}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSynonym(index)}
+                        disabled={loading}
+                        className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                        title="Remove synonym"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {synonyms.length === 0 && (
+              <p className="text-xs text-gray-500 italic">
+                Add alternative translations that should also be accepted as correct answers during practice.
+              </p>
+            )}
+          </div>
+
           <div className="flex space-x-4 pt-4">
             <button
               type="submit"
@@ -237,6 +328,8 @@ const AddVocabulary: React.FC = () => {
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Choose the language of the word and its translation</li>
           <li>• You can add single words or entire phrases</li>
+          <li>• Add synonyms/alternative translations to improve practice accuracy</li>
+          <li>• All synonyms will be accepted as correct answers during practice</li>
           <li>• Be consistent with your translations</li>
           <li>• Add words you encounter in your daily learning</li>
           <li>• Practice regularly to mark words as learned</li>

@@ -18,6 +18,7 @@ export interface VocabularyItem {
   user_id: number; // Foreign key to users table
   created_at: string;
   updated_at: string;
+  synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
 export interface CreateUserRequest {
@@ -41,6 +42,7 @@ export interface CreateVocabularyRequest {
   translation: string;
   language: string; // Language of the word/phrase
   translation_language: string; // Language of the translation
+  synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
 export interface UpdateVocabularyRequest {
@@ -49,6 +51,7 @@ export interface UpdateVocabularyRequest {
   language?: string; // Language of the word/phrase
   translation_language?: string; // Language of the translation
   learned?: boolean;
+  synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
 // Practice mode types
@@ -61,6 +64,7 @@ export interface PracticeSession {
   language: string; // Language of the word/phrase
   translation_language: string; // Language of the translation
   mode: PracticeMode;
+  synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
 export interface PracticeResult {
