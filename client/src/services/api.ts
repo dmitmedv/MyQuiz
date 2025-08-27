@@ -93,8 +93,13 @@ class ApiService {
   }
 
   // Practice endpoints
-  async getPracticeWord(mode: PracticeMode = 'word-translation'): Promise<PracticeSession> {
-    const response = await fetch(`${API_BASE}/practice/word?mode=${mode}`, {
+  async getPracticeWord(mode: PracticeMode = 'word-translation', language?: string): Promise<PracticeSession> {
+    const params = new URLSearchParams({ mode });
+    if (language && language !== 'all') {
+      params.append('language', language);
+    }
+
+    const response = await fetch(`${API_BASE}/practice/word?${params.toString()}`, {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
@@ -127,8 +132,13 @@ class ApiService {
     return response.json();
   }
 
-  async resetPractice(): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE}/practice/reset`, {
+  async resetPractice(language?: string): Promise<{ message: string }> {
+    const params = new URLSearchParams();
+    if (language && language !== 'all') {
+      params.append('language', language);
+    }
+
+    const response = await fetch(`${API_BASE}/practice/reset?${params.toString()}`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
     });

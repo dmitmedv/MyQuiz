@@ -74,23 +74,33 @@ router.use(authenticateToken);
 router.get('/word', async (req, res) => {
   // Get practice mode from query parameter, default to 'word-translation'
   const mode = (req.query.mode as PracticeMode) || 'word-translation';
-  
+  // Get language filter from query parameter
+  const language = req.query.language as string;
+
   // Validate mode parameter
   if (mode !== 'word-translation' && mode !== 'translation-word') {
     return res.status(400).json({ error: 'Invalid practice mode. Must be "word-translation" or "translation-word"' });
   }
 
   const userId = req.user!.id;
-  
-  const query = `
-    SELECT id, word, translation, language, translation_language 
-    FROM vocabulary 
-    WHERE learned = 0 AND user_id = ?
-    ORDER BY RANDOM() 
-    LIMIT 1
-  `;
 
-  db.get(query, [userId], async (err, row: { id: number; word: string; translation: string; language: string; translation_language: string }) => {
+  // Build query with optional language filter
+  let query = `
+    SELECT id, word, translation, language, translation_language
+    FROM vocabulary
+    WHERE learned = 0 AND user_id = ?
+  `;
+  let queryParams: any[] = [userId];
+
+  // Add language filter if specified
+  if (language && language !== 'all') {
+    query += ' AND language = ?';
+    queryParams.push(language);
+  }
+
+  query += ' ORDER BY RANDOM() LIMIT 1';
+
+  db.get(query, queryParams, async (err, row: { id: number; word: string; translation: string; language: string; translation_language: string }) => {
     if (err) {
       console.error('Error fetching practice word:', err);
       return res.status(500).json({ error: 'Failed to fetch practice word' });
@@ -277,17 +287,28 @@ router.get('/stats', (req, res) => {
 });
 
 // Reset all words to unlearned for the authenticated user (for testing or restarting practice)
+// Optionally filter by language if language parameter is provided
 router.post('/reset', (req, res) => {
   const userId = req.user!.id;
-  const resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
-  
-  db.run(resetQuery, [userId], function(err) {
+  const language = req.query.language as string;
+
+  let resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
+  let queryParams: any[] = [userId];
+
+  // Add language filter if specified
+  if (language && language !== 'all') {
+    resetQuery += ' AND language = ?';
+    queryParams.push(language);
+  }
+
+  db.run(resetQuery, queryParams, function(err) {
     if (err) {
       console.error('Error resetting practice progress:', err);
       return res.status(500).json({ error: 'Failed to reset practice progress' });
     }
 
-    res.json({ message: `Reset ${this.changes} words to unlearned status` });
+    const languageText = language && language !== 'all' ? ` for ${language}` : '';
+    res.json({ message: `Reset ${this.changes} words${languageText} to unlearned status` });
   });
 });
 

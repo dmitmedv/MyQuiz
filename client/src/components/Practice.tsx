@@ -3,7 +3,15 @@ import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 import { apiService } from '../services/api';
 import { getLanguageFlag } from '../utils/flags';
 
-const Practice: React.FC = () => {
+interface PracticeProps {
+  selectedLanguage?: string;
+  onLanguageChange?: (language: string) => void;
+}
+
+const Practice: React.FC<PracticeProps> = ({
+  selectedLanguage: propSelectedLanguage,
+  onLanguageChange: propOnLanguageChange
+}) => {
   const [currentWord, setCurrentWord] = useState<PracticeSession | null>(null);
   const [userAnswer, setUserAnswer] = useState('');
   const [result, setResult] = useState<PracticeResult | null>(null);
@@ -11,7 +19,12 @@ const Practice: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('word-translation');
-  
+
+  // Use prop language if provided, otherwise use internal state
+  const [internalSelectedLanguage, setInternalSelectedLanguage] = useState<string>('all');
+  const selectedLanguage = propSelectedLanguage !== undefined ? propSelectedLanguage : internalSelectedLanguage;
+  const setSelectedLanguage = propOnLanguageChange || setInternalSelectedLanguage;
+
   // Ref for the input field to programmatically focus it
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -23,8 +36,8 @@ const Practice: React.FC = () => {
       setIsCompleted(false);
       setResult(null);
       setUserAnswer('');
-      
-      const word = await apiService.getPracticeWord(practiceMode);
+
+      const word = await apiService.getPracticeWord(practiceMode, selectedLanguage);
       setCurrentWord(word);
     } catch (err: any) {
       if (err.message.includes('No unlearned words available for practice')) {
@@ -38,7 +51,7 @@ const Practice: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [practiceMode]);
+  }, [practiceMode, selectedLanguage]);
 
   const handleCheckAnswer = useCallback(async () => {
     if (!currentWord || !userAnswer.trim()) return;
@@ -132,12 +145,13 @@ const Practice: React.FC = () => {
   }, [result, handleNextWord]);
 
   const handleReset = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to reset all progress? This will mark all words as unlearned.')) {
+    const languageText = selectedLanguage === 'all' ? 'all languages' : `${selectedLanguage} words`;
+    if (!window.confirm(`Are you sure you want to reset progress for ${languageText}? This will mark ${languageText} as unlearned.`)) {
       return;
     }
 
     try {
-      await apiService.resetPractice();
+      await apiService.resetPractice(selectedLanguage);
       setIsCompleted(false);
       loadNewWord();
     } catch (err) {
@@ -145,7 +159,7 @@ const Practice: React.FC = () => {
       setIsCompleted(false);
       console.error(err);
     }
-  }, [loadNewWord]);
+  }, [selectedLanguage, loadNewWord]);
 
   // Helper function to get the displayed text based on practice mode
   const getDisplayText = () => {
