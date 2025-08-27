@@ -324,7 +324,14 @@ const VocabularyList: React.FC = () => {
             
             {/* Table body */}
             <tbody className="divide-y divide-gray-100">
-              {vocabulary.map((item, index) => (
+              {vocabulary
+                .sort((a, b) => {
+                  // Sort mastered words to the end
+                  if (a.mastered && !b.mastered) return 1;
+                  if (!a.mastered && b.mastered) return -1;
+                  return 0; // Keep original order for words with same mastered status
+                })
+                .map((item, index) => (
                 <tr
                   key={item.id}
                   className={`hover:bg-gray-50 ${
