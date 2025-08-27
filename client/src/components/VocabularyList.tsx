@@ -415,18 +415,26 @@ const VocabularyList: React.FC = () => {
                       <td className="px-4 py-3">
                         <div>
                           <span className="text-gray-600">{item.translation}</span>
-                          {item.synonyms && item.synonyms.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {item.synonyms.map((synonym, synonymIndex) => (
-                                <span
-                                  key={synonymIndex}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 border border-blue-200"
-                                >
-                                  {synonym}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          {(() => {
+                            // Filter out synonyms that are the same as the main translation
+                            const uniqueSynonyms = item.synonyms?.filter(
+                              synonym => synonym.trim().toLowerCase() !== item.translation.trim().toLowerCase()
+                            ) || [];
+                            
+                            // Only render if there are unique synonyms to show
+                            return uniqueSynonyms.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {uniqueSynonyms.map((synonym, synonymIndex) => (
+                                  <span
+                                    key={synonymIndex}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 border border-blue-200"
+                                  >
+                                    {synonym}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3">
