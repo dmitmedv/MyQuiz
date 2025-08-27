@@ -6,6 +6,7 @@ import AddVocabulary from './components/AddVocabulary';
 import Practice from './components/Practice';
 import Stats from './components/Stats';
 import AuthPage from './components/AuthPage';
+import UserSettings from './components/UserSettings';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -79,6 +80,12 @@ const AppContent: React.FC = () => {
               <span className="text-sm text-gray-700">
                 Hello, <span className="font-medium">{user?.username}</span>
               </span>
+              <Link 
+                to="/settings" 
+                className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Settings
+              </Link>
               <button
                 onClick={logout}
                 className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
@@ -148,6 +155,13 @@ const AppContent: React.FC = () => {
               <div className="px-3 py-2 text-sm text-gray-700">
                 Hello, <span className="font-medium">{user?.username}</span>
               </div>
+              <Link
+                to="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block text-gray-500 hover:text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
+              >
+                Settings
+              </Link>
               <button
                 onClick={() => {
                   logout();
@@ -169,6 +183,7 @@ const AppContent: React.FC = () => {
           <Route path="/add" element={<AddVocabulary />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/settings" element={<UserSettings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -90,4 +90,22 @@ export interface PracticeStats {
   progress: number;
   total_correct_attempts: number; // Total correct attempts across all words
   total_wrong_attempts: number; // Total wrong attempts across all words
+}
+
+export interface Language {
+  value: string;
+  flag: string;
+  name: string;
+}
+
+export interface UserSettings {
+  id: number;
+  user_id: number;
+  selected_languages: string[]; // Array of language codes (e.g., ['english', 'spanish'])
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateUserSettingsRequest {
+  selected_languages: string[];
 } 

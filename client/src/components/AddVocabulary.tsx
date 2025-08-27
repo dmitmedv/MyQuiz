@@ -1,24 +1,102 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import { Language } from '../types';
 
 
 const AddVocabulary: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
+  const [form, setForm] = useState({ word: '', translation: '', language: '', translation_language: '' });
   const [synonyms, setSynonyms] = useState<string[]>([]);
   const [currentSynonym, setCurrentSynonym] = useState('');
   const [loading, setLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [duplicateDetails, setDuplicateDetails] = useState<string | null>(null);
   const [existingWord, setExistingWord] = useState<{ word: string; translation: string } | null>(null);
+  const [userLanguages, setUserLanguages] = useState<Language[]>([]);
 
-  // Available languages with their flags
-  const languages = [
+  // All available languages with their flags
+  const ALL_LANGUAGES = [
+    { value: 'english', flag: '🇬🇧', name: 'English' },
     { value: 'serbian', flag: '🇷🇸', name: 'Serbian' },
     { value: 'russian', flag: '🇷🇺', name: 'Russian' },
-    { value: 'english', flag: '🇬🇧', name: 'English' }
+    { value: 'spanish', flag: '🇪🇸', name: 'Spanish' },
+    { value: 'french', flag: '🇫🇷', name: 'French' },
+    { value: 'german', flag: '🇩🇪', name: 'German' },
+    { value: 'italian', flag: '🇮🇹', name: 'Italian' },
+    { value: 'portuguese', flag: '🇵🇹', name: 'Portuguese' },
+    { value: 'chinese', flag: '🇨🇳', name: 'Chinese' },
+    { value: 'japanese', flag: '🇯🇵', name: 'Japanese' },
+    { value: 'korean', flag: '🇰🇷', name: 'Korean' },
+    { value: 'arabic', flag: '🇸🇦', name: 'Arabic' },
+    { value: 'hindi', flag: '🇮🇳', name: 'Hindi' }
   ];
+
+  // Load user's language settings
+  useEffect(() => {
+    loadUserLanguages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadUserLanguages = async () => {
+    try {
+      setSettingsLoading(true);
+      const settings = await apiService.getUserSettings();
+      
+      // Filter available languages to only show user's selected ones
+      const filteredLanguages = ALL_LANGUAGES.filter(lang => 
+        settings.selected_languages.includes(lang.value)
+      );
+      
+      setUserLanguages(filteredLanguages);
+      
+      // Set default languages if form is empty and user has selected languages
+      if (!form.language && !form.translation_language && filteredLanguages.length > 0) {
+        // Try to set sensible defaults based on user's selection
+        const hasEnglish = filteredLanguages.some(l => l.value === 'english');
+        const nonEnglishLangs = filteredLanguages.filter(l => l.value !== 'english');
+        
+        if (hasEnglish && nonEnglishLangs.length > 0) {
+          // Default: first non-English -> English
+          setForm(prev => ({
+            ...prev,
+            language: nonEnglishLangs[0].value,
+            translation_language: 'english'
+          }));
+        } else {
+          // Default: first two languages from user's selection
+          setForm(prev => ({
+            ...prev,
+            language: filteredLanguages[0]?.value || '',
+            translation_language: filteredLanguages[1]?.value || filteredLanguages[0]?.value || ''
+          }));
+        }
+      }
+      
+    } catch (err: any) {
+      console.error('Error loading user settings:', err);
+      setError('Failed to load language settings. Please check your settings page.');
+      
+      // Fallback to default languages if settings fail to load
+      setUserLanguages([
+        { value: 'english', flag: '🇬🇧', name: 'English' },
+        { value: 'serbian', flag: '🇷🇸', name: 'Serbian' },
+        { value: 'russian', flag: '🇷🇺', name: 'Russian' },
+        { value: 'spanish', flag: '🇪🇸', name: 'Spanish' }
+      ]);
+      
+      if (!form.language && !form.translation_language) {
+        setForm(prev => ({
+          ...prev,
+          language: 'serbian',
+          translation_language: 'english'
+        }));
+      }
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   // Handle adding a new synonym
   const handleAddSynonym = () => {
@@ -85,8 +163,8 @@ const AddVocabulary: React.FC = () => {
         synonyms: synonyms.length > 0 ? synonyms : undefined // Only include synonyms if there are any
       });
       
-      // Reset form and redirect to vocabulary list
-      setForm({ word: '', translation: '', language: 'serbian', translation_language: 'english' });
+      // Reset form and redirect to vocabulary list - keep current language settings
+      setForm(prev => ({ ...prev, word: '', translation: '' }));
       setSynonyms([]);
       setCurrentSynonym('');
       setError(null);
@@ -164,7 +242,7 @@ const AddVocabulary: React.FC = () => {
                 className="input"
                 disabled={loading}
               >
-                {languages.map(lang => (
+                {userLanguages.map(lang => (
                   <option key={lang.value} value={lang.value}>
                     {lang.flag} {lang.name}
                   </option>
@@ -184,7 +262,7 @@ const AddVocabulary: React.FC = () => {
                 className="input"
                 disabled={loading}
               >
-                {languages.map(lang => (
+                {userLanguages.map(lang => (
                   <option key={lang.value} value={lang.value}>
                     {lang.flag} {lang.name}
                   </option>
@@ -326,7 +404,7 @@ const AddVocabulary: React.FC = () => {
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Tips</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Choose the language of the word and its translation</li>
+          <li>• Choose the language of the word and its translation from your selected languages</li>
           <li>• You can add single words or entire phrases</li>
           <li>• Add synonyms/alternative translations to improve practice accuracy</li>
           <li>• All synonyms will be accepted as correct answers during practice</li>
@@ -334,6 +412,7 @@ const AddVocabulary: React.FC = () => {
           <li>• Add words you encounter in your daily learning</li>
           <li>• Practice regularly to mark words as learned</li>
           <li>• Each word can only exist once per language</li>
+          <li>• Visit <strong>Settings</strong> to manage your available languages</li>
         </ul>
       </div>
     </div>

@@ -5,7 +5,9 @@ import {
   PracticeSession,
   PracticeResult,
   PracticeStats,
-  PracticeMode
+  PracticeMode,
+  UserSettings,
+  UpdateUserSettingsRequest
 } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
@@ -132,6 +134,31 @@ class ApiService {
     });
     if (!response.ok) {
       throw new Error('Failed to reset practice');
+    }
+    return response.json();
+  }
+
+  // User Settings endpoints
+  async getUserSettings(): Promise<UserSettings> {
+    const response = await fetch(`${API_BASE}/user/settings`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to fetch user settings');
+    }
+    return response.json();
+  }
+
+  async updateUserSettings(data: UpdateUserSettingsRequest): Promise<UserSettings> {
+    const response = await fetch(`${API_BASE}/user/settings`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to update user settings');
     }
     return response.json();
   }

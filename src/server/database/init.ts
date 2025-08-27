@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import { addUserSettingsTable } from './add-user-settings';
 import { addTranslationLanguageColumn } from './add-translation-language';
 import { addSynonymsSupport } from './add-synonyms-support';
 
@@ -153,17 +154,23 @@ export async function initializeDatabase(): Promise<void> {
 
             console.log('Database tables and indexes created successfully');
             
-            // Run synonyms migration
+            // Run synonyms migration first
             addSynonymsSupport()
               .then(() => {
                 console.log('Synonyms support migration completed successfully');
+                
+                // Then run user settings migration
+                return addUserSettingsTable();
+              })
+              .then(() => {
+                console.log('User settings migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {
-                console.error('Synonyms migration failed:', migrationErr);
+                console.error('Migration failed:', migrationErr);
                 // Don't fail the entire initialization if migration fails
                 // Just log the error and continue
-                console.log('Continuing without synonyms support...');
+                console.log('Continuing with basic functionality...');
                 resolve();
               });
           });

@@ -6,6 +6,7 @@ import path from 'path';
 import { vocabularyRoutes } from './routes/vocabulary';
 import { practiceRoutes } from './routes/practice';
 import { authRoutes } from './routes/auth';
+import userSettingsRoutes from './routes/user-settings';
 import { initializeDatabase } from './database/init';
 
 const app = express();
@@ -39,6 +40,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/vocabulary', vocabularyRoutes);
 app.use('/api/practice', practiceRoutes);
+app.use('/api/user', userSettingsRoutes);
 
 // Serve React app for any non-API routes (production only)
 if (NODE_ENV === 'production') {
