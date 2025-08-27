@@ -80,6 +80,7 @@ export interface PracticeResult {
   expectedTranslation: string;
   userTranslation: string;
   originalAnswer?: string; // The original answer with diacriticals (only included if different from expectedTranslation)
+  synonyms?: string[]; // All possible synonyms/alternative translations (only included when answer is incorrect)
 }
 
 export interface PracticeStats {

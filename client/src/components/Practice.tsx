@@ -259,9 +259,19 @@ const Practice: React.FC = () => {
                   Your answer: <span className="font-medium">{result.userTranslation}</span>
                 </p>
                 {!result.correct && (
-                  <p className="text-gray-600">
-                    Correct answer: <span className="font-medium text-success-700">{result.expectedTranslation}</span>
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-gray-600">
+                      Correct answer: <span className="font-medium text-success-700">{result.expectedTranslation}</span>
+                    </p>
+                    {/* Display all synonyms/alternative answers when available */}
+                    {result.synonyms && result.synonyms.length > 0 && (
+                      <p className="text-gray-600 text-sm">
+                        Other correct answers: <span className="font-medium text-success-600">
+                          {result.synonyms.join(', ')}
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 )}
                 {result.correct && result.originalAnswer && (
                   <p className="text-gray-600">

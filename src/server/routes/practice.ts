@@ -193,7 +193,9 @@ router.post('/check', async (req, res) => {
         expectedTranslation: expectedAnswer,
         userTranslation: userTranslation,
         // Only include originalAnswer if it contains diacriticals and differs from user input
-        ...(shouldShowOriginal && { originalAnswer: matchedAnswer })
+        ...(shouldShowOriginal && { originalAnswer: matchedAnswer }),
+        // Include all synonyms when answer is incorrect to show user all possible correct answers
+        ...(!isCorrect && { synonyms: possibleAnswers.filter(answer => answer !== expectedAnswer) })
       };
 
       // Update attempt counts and mark as learned if correct
