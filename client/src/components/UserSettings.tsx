@@ -24,6 +24,7 @@ const UserSettings: React.FC = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettingsType | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [skipButtonEnabled, setSkipButtonEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,7 @@ const UserSettings: React.FC = () => {
       const userSettings = await apiService.getUserSettings();
       setSettings(userSettings);
       setSelectedLanguages(userSettings.selected_languages);
+      setSkipButtonEnabled(userSettings.skip_button_enabled);
     } catch (err: any) {
       console.error('Error loading user settings:', err);
       setError('Failed to load language settings');
@@ -77,7 +79,8 @@ const UserSettings: React.FC = () => {
       setSuccessMessage(null);
       
       const updatedSettings = await apiService.updateUserSettings({
-        selected_languages: selectedLanguages
+        selected_languages: selectedLanguages,
+        skip_button_enabled: skipButtonEnabled
       });
       
       setSettings(updatedSettings);
@@ -99,12 +102,16 @@ const UserSettings: React.FC = () => {
   const handleReset = () => {
     if (settings) {
       setSelectedLanguages(settings.selected_languages);
+      setSkipButtonEnabled(settings.skip_button_enabled);
       setError(null);
       setSuccessMessage(null);
     }
   };
 
-  const hasUnsavedChanges = settings && JSON.stringify(selectedLanguages.sort()) !== JSON.stringify(settings.selected_languages.sort());
+  const hasUnsavedChanges = settings && (
+    JSON.stringify(selectedLanguages.sort()) !== JSON.stringify(settings.selected_languages.sort()) ||
+    skipButtonEnabled !== settings.skip_button_enabled
+  );
 
   if (loading) {
     return (
@@ -199,6 +206,31 @@ const UserSettings: React.FC = () => {
           </div>
         </div>
 
+        {/* Practice Mode Settings */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Practice Mode Settings</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Configure options for your practice sessions.
+          </p>
+
+          <div className="space-y-4">
+            <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={skipButtonEnabled}
+                onChange={(e) => setSkipButtonEnabled(e.target.checked)}
+                className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+              />
+              <div className="ml-3">
+                <div className="font-medium text-gray-900">Enable Skip Button</div>
+                <div className="text-sm text-gray-600">
+                  Show a skip button during practice sessions to skip difficult words or phrases
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
           <button
@@ -238,14 +270,29 @@ const UserSettings: React.FC = () => {
 
       {/* Help Section */}
       <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 How Language Settings Work</h3>
-        <ul className="text-sm text-gray-700 space-y-2">
-          <li>• <strong>Selected languages</strong> will appear in the language dropdowns when adding new vocabulary</li>
-          <li>• You can choose both the <strong>word language</strong> and <strong>translation language</strong> from your selected languages</li>
-          <li>• This allows you to learn multiple languages simultaneously (e.g., Serbian → English, English → Spanish)</li>
-          <li>• You can change these settings anytime - existing vocabulary won't be affected</li>
-          <li>• At least one language must be selected to add new vocabulary</li>
-        </ul>
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">💡 How Settings Work</h3>
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Language Settings</h4>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• <strong>Selected languages</strong> will appear in the language dropdowns when adding new vocabulary</li>
+              <li>• You can choose both the <strong>word language</strong> and <strong>translation language</strong> from your selected languages</li>
+              <li>• This allows you to learn multiple languages simultaneously (e.g., Serbian → English, English → Spanish)</li>
+              <li>• You can change these settings anytime - existing vocabulary won't be affected</li>
+              <li>• At least one language must be selected to add new vocabulary</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-gray-900 mb-2">Practice Mode Settings</h4>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• <strong>Skip button</strong> allows you to skip difficult words or phrases during practice sessions</li>
+              <li>• When enabled, you'll see a skip button that moves to the next word without marking it as correct or wrong</li>
+              <li>• This is useful for words you find particularly challenging or want to revisit later</li>
+              <li>• The skip button setting can be changed anytime and takes effect immediately</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );

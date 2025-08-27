@@ -4,6 +4,7 @@ import { addUserSettingsTable } from './add-user-settings';
 import { addTranslationLanguageColumn } from './add-translation-language';
 import { addSynonymsSupport } from './add-synonyms-support';
 import { addMasteredColumn } from './add-mastered-column';
+import { addSkipButtonSetting } from './add-skip-button-setting';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -167,6 +168,10 @@ export async function initializeDatabase(): Promise<void> {
               })
               .then(() => {
                 console.log('Mastered column migration completed successfully');
+                return addSkipButtonSetting();
+              })
+              .then(() => {
+                console.log('Skip button setting migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {

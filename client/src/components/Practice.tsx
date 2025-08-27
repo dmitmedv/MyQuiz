@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PracticeSession, PracticeResult, PracticeMode } from '../types';
+import { PracticeSession, PracticeResult, PracticeMode, UserSettings } from '../types';
 import { apiService } from '../services/api';
 import { getLanguageFlag } from '../utils/flags';
 
@@ -19,6 +19,7 @@ const Practice: React.FC<PracticeProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('word-translation');
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
 
   // Use prop language if provided, otherwise use internal state
   const [internalSelectedLanguage, setInternalSelectedLanguage] = useState<string>('all');
@@ -53,6 +54,24 @@ const Practice: React.FC<PracticeProps> = ({
     }
   }, [practiceMode, selectedLanguage]);
 
+  const loadUserSettings = useCallback(async () => {
+    try {
+      const settings = await apiService.getUserSettings();
+      setUserSettings(settings);
+    } catch (err) {
+      console.error('Failed to load user settings:', err);
+      // Set default settings if loading fails
+      setUserSettings({
+        id: 0,
+        user_id: 0,
+        selected_languages: [],
+        skip_button_enabled: false,
+        created_at: '',
+        updated_at: ''
+      });
+    }
+  }, []);
+
   const handleCheckAnswer = useCallback(async () => {
     if (!currentWord || !userAnswer.trim()) return;
 
@@ -72,6 +91,11 @@ const Practice: React.FC<PracticeProps> = ({
     loadNewWord();
   }, [loadNewWord]);
 
+  const handleSkipWord = useCallback(() => {
+    // Simply move to the next word without checking the answer
+    loadNewWord();
+  }, [loadNewWord]);
+
   // Legacy key handler for input field - now handled globally
   const handleKeyPress = (e: React.KeyboardEvent) => {
     // This is now handled by the global key listener, but keeping for input-specific behavior if needed
@@ -80,14 +104,14 @@ const Practice: React.FC<PracticeProps> = ({
     }
   };
 
-  // Add global key event listener for Enter key
+    // Add global key event listener for Enter key
   useEffect(() => {
     const handleGlobalKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && !loading) {
         // If no result is shown, check the answer (only if there's an answer)
         if (!result && userAnswer.trim()) {
           handleCheckAnswer();
-        } 
+        }
         // If result is shown, move to next word
         else if (result) {
           handleNextWord();
@@ -103,6 +127,11 @@ const Practice: React.FC<PracticeProps> = ({
       document.removeEventListener('keydown', handleGlobalKeyPress);
     };
   }, [loading, result, userAnswer, handleCheckAnswer, handleNextWord]); // Dependencies ensure the handler has access to current state
+
+  // Load user settings on mount
+  useEffect(() => {
+    loadUserSettings();
+  }, [loadUserSettings]);
 
   // Initial load effect
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,20 +268,36 @@ const Practice: React.FC<PracticeProps> = ({
                 disabled={loading}
                 autoFocus
               />
-              <button
-                onClick={handleCheckAnswer}
-                disabled={loading || !userAnswer.trim()}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Checking...
-                  </div>
-                ) : (
-                  'Check Answer'
+
+                            {/* Button Row - Check Answer and Skip (if enabled) */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCheckAnswer}
+                  disabled={loading || !userAnswer.trim()}
+                  className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Checking...
+                    </div>
+                  ) : (
+                    'Check Answer'
+                  )}
+                </button>
+
+                {/* Skip Button - only show if enabled in user settings */}
+                {userSettings?.skip_button_enabled && (
+                  <button
+                    onClick={handleSkipWord}
+                    disabled={loading}
+                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Skip this word and move to the next one"
+                  >
+                    Skip
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
