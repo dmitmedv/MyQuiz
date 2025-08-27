@@ -88,7 +88,7 @@ router.get('/word', async (req, res) => {
   let query = `
     SELECT id, word, translation, language, translation_language
     FROM vocabulary
-    WHERE learned = 0 AND user_id = ?
+    WHERE learned = 0 AND mastered = 0 AND user_id = ?
   `;
   let queryParams: any[] = [userId];
 
@@ -253,22 +253,24 @@ router.get('/stats', (req, res) => {
   const userId = req.user!.id;
   
   const statsQuery = `
-    SELECT 
+    SELECT
       COUNT(*) as total,
       SUM(CASE WHEN learned = 1 THEN 1 ELSE 0 END) as learned,
-      SUM(CASE WHEN learned = 0 THEN 1 ELSE 0 END) as unlearned,
+      SUM(CASE WHEN mastered = 1 THEN 1 ELSE 0 END) as mastered,
+      SUM(CASE WHEN learned = 0 AND mastered = 0 THEN 1 ELSE 0 END) as unlearned,
       SUM(correct_attempts) as total_correct_attempts,
       SUM(wrong_attempts) as total_wrong_attempts
     FROM vocabulary
     WHERE user_id = ?
   `;
 
-  db.get(statsQuery, [userId], (err, row: { 
-    total: number; 
-    learned: number; 
-    unlearned: number; 
-    total_correct_attempts: number; 
-    total_wrong_attempts: number; 
+  db.get(statsQuery, [userId], (err, row: {
+    total: number;
+    learned: number;
+    mastered: number;
+    unlearned: number;
+    total_correct_attempts: number;
+    total_wrong_attempts: number;
   }) => {
     if (err) {
       console.error('Error fetching practice stats:', err);
@@ -278,6 +280,7 @@ router.get('/stats', (req, res) => {
     res.json({
       total: row.total,
       learned: row.learned,
+      mastered: row.mastered,
       unlearned: row.unlearned,
       progress: row.total > 0 ? Math.round((row.learned / row.total) * 100) : 0,
       total_correct_attempts: row.total_correct_attempts || 0,
@@ -292,7 +295,7 @@ router.post('/reset', (req, res) => {
   const userId = req.user!.id;
   const language = req.query.language as string;
 
-  let resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
+  let resetQuery = 'UPDATE vocabulary SET learned = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND mastered = 0';
   let queryParams: any[] = [userId];
 
   // Add language filter if specified

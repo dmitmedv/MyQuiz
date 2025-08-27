@@ -14,6 +14,7 @@ export interface VocabularyItem {
   language: string; // Language of the word/phrase (serbian, russian, english)
   translation_language: string; // Language of the translation (english, serbian, russian)
   learned: boolean;
+  mastered: boolean; // Permanently mastered words that persist through progress resets
   correct_attempts: number; // Number of correct practice attempts
   wrong_attempts: number; // Number of wrong practice attempts
   user_id: number; // Foreign key to users table
@@ -52,6 +53,7 @@ export interface UpdateVocabularyRequest {
   language?: string; // Language of the word/phrase
   translation_language?: string; // Language of the translation
   learned?: boolean;
+  mastered?: boolean; // Permanently mastered words that persist through progress resets
   synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
@@ -86,6 +88,7 @@ export interface PracticeResult {
 export interface PracticeStats {
   total: number;
   learned: number;
+  mastered: number; // Permanently mastered words
   unlearned: number;
   progress: number;
   total_correct_attempts: number; // Total correct attempts across all words

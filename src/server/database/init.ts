@@ -3,6 +3,7 @@ import path from 'path';
 import { addUserSettingsTable } from './add-user-settings';
 import { addTranslationLanguageColumn } from './add-translation-language';
 import { addSynonymsSupport } from './add-synonyms-support';
+import { addMasteredColumn } from './add-mastered-column';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -153,17 +154,19 @@ export async function initializeDatabase(): Promise<void> {
             }
 
             console.log('Database tables and indexes created successfully');
-            
-            // Run synonyms migration first
+
+            // Run migrations in sequence
             addSynonymsSupport()
               .then(() => {
                 console.log('Synonyms support migration completed successfully');
-                
-                // Then run user settings migration
                 return addUserSettingsTable();
               })
               .then(() => {
                 console.log('User settings migration completed successfully');
+                return addMasteredColumn();
+              })
+              .then(() => {
+                console.log('Mastered column migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {

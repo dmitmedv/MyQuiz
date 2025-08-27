@@ -11,13 +11,14 @@ const VocabularyList: React.FC = () => {
   const [editForm, setEditForm] = useState({ word: '', translation: '', language: 'serbian' });
   const [editSynonyms, setEditSynonyms] = useState<string[]>([]);
   const [currentEditSynonym, setCurrentEditSynonym] = useState('');
-  const [stats, setStats] = useState<PracticeStats>({ 
-    total: 0, 
-    unlearned: 0, 
-    learned: 0, 
-    progress: 0, 
-    total_correct_attempts: 0, 
-    total_wrong_attempts: 0 
+  const [stats, setStats] = useState<PracticeStats>({
+    total: 0,
+    learned: 0,
+    mastered: 0,
+    unlearned: 0,
+    progress: 0,
+    total_correct_attempts: 0,
+    total_wrong_attempts: 0
   });
 
   // Available languages for editing
@@ -84,16 +85,17 @@ const VocabularyList: React.FC = () => {
       const exportData = {
         exportDate: new Date().toISOString(),
         totalWords: vocabulary.length,
-        vocabulary: vocabulary.map(item => ({
-          word: item.word,
-          translation: item.translation,
-          language: item.language,
-          translation_language: item.translation_language,
-          synonyms: item.synonyms || [],
-          learned: item.learned,
-          correct_attempts: item.correct_attempts,
-          wrong_attempts: item.wrong_attempts
-        }))
+                  vocabulary: vocabulary.map(item => ({
+            word: item.word,
+            translation: item.translation,
+            language: item.language,
+            translation_language: item.translation_language,
+            synonyms: item.synonyms || [],
+            learned: item.learned,
+            mastered: item.mastered,
+            correct_attempts: item.correct_attempts,
+            wrong_attempts: item.wrong_attempts
+          }))
       };
 
       // Create blob and download link
@@ -201,10 +203,26 @@ const VocabularyList: React.FC = () => {
       const updatedItem = await apiService.updateVocabularyItem(item.id, {
         learned: !item.learned
       });
-      setVocabulary(vocabulary.map(v => 
+      setVocabulary(vocabulary.map(v =>
         v.id === item.id ? updatedItem : v
       ));
       // Refresh stats after toggling learned status
+      await loadStats();
+    } catch (err) {
+      setError('Failed to update vocabulary item');
+      console.error(err);
+    }
+  };
+
+  const toggleMastered = async (item: VocabularyItem) => {
+    try {
+      const updatedItem = await apiService.updateVocabularyItem(item.id, {
+        mastered: !item.mastered
+      });
+      setVocabulary(vocabulary.map(v =>
+        v.id === item.id ? updatedItem : v
+      ));
+      // Refresh stats after toggling mastered status
       await loadStats();
     } catch (err) {
       setError('Failed to update vocabulary item');
@@ -243,10 +261,14 @@ const VocabularyList: React.FC = () => {
       {/* Statistics Panel */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Progress</h3>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-primary-600">{stats.total}</div>
             <div className="text-sm text-gray-500">Total Words</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-600">{stats.mastered || 0}</div>
+            <div className="text-sm text-gray-500">Mastered</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-success-600">{stats.learned}</div>
@@ -294,6 +316,7 @@ const VocabularyList: React.FC = () => {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Translation</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Language</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Mastered</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Attempts</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
               </tr>
@@ -302,10 +325,19 @@ const VocabularyList: React.FC = () => {
             {/* Table body */}
             <tbody className="divide-y divide-gray-100">
               {vocabulary.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr
+                  key={item.id}
+                  className={`hover:bg-gray-50 ${
+                    item.mastered
+                      ? 'opacity-40 bg-blue-50 border-l-4 border-l-blue-400'
+                      : item.learned
+                        ? 'opacity-30 bg-gray-100'
+                        : ''
+                  }`}
+                >
                   {editingId === item.id ? (
                     // Edit mode - full width form spanning all columns
-                    <td colSpan={6} className="px-4 py-3">
+                    <td colSpan={7} className="px-4 py-3">
                       <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4">
                           <input
@@ -456,6 +488,18 @@ const VocabularyList: React.FC = () => {
                         </button>
                       </td>
                       <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleMastered(item)}
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            item.mastered
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {item.mastered ? 'Mastered' : 'Not Mastered'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="text-sm text-gray-600">
                           <div className="flex flex-col space-y-1">
                             <div className="flex items-center justify-between">
@@ -510,7 +554,7 @@ const VocabularyList: React.FC = () => {
             {vocabulary.length > 0 && (
               <tfoot className="bg-gray-50 border-t border-gray-200">
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-sm text-gray-600 font-medium">
+                  <td colSpan={5} className="px-4 py-3 text-sm text-gray-600 font-medium">
                     Summary
                   </td>
                   <td className="px-4 py-3">

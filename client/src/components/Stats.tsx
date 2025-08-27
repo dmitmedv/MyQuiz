@@ -3,13 +3,14 @@ import { PracticeStats, VocabularyItem } from '../types';
 import { apiService } from '../services/api';
 
 const Stats: React.FC = () => {
-  const [stats, setStats] = useState<PracticeStats>({ 
-    total: 0, 
-    learned: 0, 
-    unlearned: 0, 
-    progress: 0, 
-    total_correct_attempts: 0, 
-    total_wrong_attempts: 0 
+  const [stats, setStats] = useState<PracticeStats>({
+    total: 0,
+    learned: 0,
+    mastered: 0,
+    unlearned: 0,
+    progress: 0,
+    total_correct_attempts: 0,
+    total_wrong_attempts: 0
   });
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,10 +76,14 @@ const Stats: React.FC = () => {
       {/* Progress Overview */}
       <div className="card">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Progress Overview</h3>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary-600 mb-1">{stats.total}</div>
             <div className="text-sm text-gray-500">Total Words</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-1">{stats.mastered || 0}</div>
+            <div className="text-sm text-gray-500">Mastered</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-success-600 mb-1">{stats.learned}</div>
@@ -149,24 +154,37 @@ const Stats: React.FC = () => {
           <div className="space-y-4">
             <div>
               <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Mastered Words</span>
+                <span className="text-sm text-blue-600 font-medium">{stats.mastered || 0}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${stats.total > 0 ? ((stats.mastered || 0) / stats.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">Learned Words</span>
                 <span className="text-sm text-success-600 font-medium">{stats.learned}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-success-500 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${stats.total > 0 ? (stats.learned / stats.total) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">Words to Learn</span>
                 <span className="text-sm text-gray-600 font-medium">{stats.unlearned}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gray-500 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${stats.total > 0 ? (stats.unlearned / stats.total) * 100 : 0}%` }}
                 ></div>

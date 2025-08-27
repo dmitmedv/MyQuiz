@@ -96,7 +96,8 @@ router.get('/', async (req, res) => {
   const userId = req.user!.id; // user is guaranteed to exist due to authentication middleware
   
   const query = `
-    SELECT * FROM vocabulary 
+    SELECT id, word, translation, language, translation_language, learned, mastered, correct_attempts, wrong_attempts, user_id, created_at, updated_at
+    FROM vocabulary
     WHERE user_id = ?
     ORDER BY created_at DESC
   `;
@@ -124,7 +125,7 @@ router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const userId = req.user!.id;
   
-  const query = 'SELECT * FROM vocabulary WHERE id = ? AND user_id = ?';
+  const query = 'SELECT id, word, translation, language, translation_language, learned, mastered, correct_attempts, wrong_attempts, user_id, created_at, updated_at FROM vocabulary WHERE id = ? AND user_id = ?';
   
   db.get(query, [id, userId], async (err, row: VocabularyItem) => {
     if (err) {
@@ -196,7 +197,7 @@ router.post('/', async (req, res) => {
       
       // Fetch the created item and save synonyms
       const vocabularyId = this.lastID;
-      const selectQuery = 'SELECT * FROM vocabulary WHERE id = ?';
+      const selectQuery = 'SELECT id, word, translation, language, translation_language, learned, mastered, correct_attempts, wrong_attempts, user_id, created_at, updated_at FROM vocabulary WHERE id = ?';
       
       db.get(selectQuery, [vocabularyId], async (err, row: VocabularyItem) => {
         if (err) {
@@ -256,6 +257,11 @@ router.put('/:id', async (req, res) => {
     setClause.push('learned = ?');
     values.push(updates.learned ? 1 : 0);
   }
+
+  if (updates.mastered !== undefined) {
+    setClause.push('mastered = ?');
+    values.push(updates.mastered ? 1 : 0);
+  }
   
   // Handle synonyms separately since they go in a different table
   const hasSynonymUpdates = updates.synonyms !== undefined;
@@ -302,7 +308,7 @@ router.put('/:id', async (req, res) => {
     }
     
     // Fetch the updated item with synonyms
-    const selectQuery = 'SELECT * FROM vocabulary WHERE id = ? AND user_id = ?';
+    const selectQuery = 'SELECT id, word, translation, language, translation_language, learned, mastered, correct_attempts, wrong_attempts, user_id, created_at, updated_at FROM vocabulary WHERE id = ? AND user_id = ?';
     db.get(selectQuery, [id, userId], async (err, row: VocabularyItem) => {
       if (err) {
         console.error('Error fetching updated vocabulary item:', err);
@@ -379,7 +385,7 @@ router.post('/:id/reset-attempts', (req, res) => {
     }
     
     // Fetch the updated item
-    const selectQuery = 'SELECT * FROM vocabulary WHERE id = ?';
+    const selectQuery = 'SELECT id, word, translation, language, translation_language, learned, mastered, correct_attempts, wrong_attempts, user_id, created_at, updated_at FROM vocabulary WHERE id = ?';
     db.get(selectQuery, [id], (err, row: VocabularyItem) => {
       if (err) {
         console.error('Error fetching updated vocabulary item:', err);
