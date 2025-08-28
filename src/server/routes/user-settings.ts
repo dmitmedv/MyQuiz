@@ -9,7 +9,7 @@ const router = Router();
 function getUserSettings(userId: number): Promise<UserSettings | null> {
   return new Promise((resolve, reject) => {
     db.get(
-      'SELECT id, user_id, selected_languages, skip_button_enabled, auto_insert_enabled, created_at, updated_at FROM user_settings WHERE user_id = ?',
+      'SELECT id, user_id, selected_languages, skip_button_enabled, auto_insert_enabled, help_button_enabled, created_at, updated_at FROM user_settings WHERE user_id = ?',
       [userId],
       (err, row: any) => {
         if (err) {
@@ -20,7 +20,8 @@ function getUserSettings(userId: number): Promise<UserSettings | null> {
             ...row,
             selected_languages: JSON.parse(row.selected_languages),
             skip_button_enabled: Boolean(row.skip_button_enabled), // Ensure boolean type
-            auto_insert_enabled: Boolean(row.auto_insert_enabled) // Ensure boolean type
+            auto_insert_enabled: Boolean(row.auto_insert_enabled), // Ensure boolean type
+            help_button_enabled: Boolean(row.help_button_enabled) // Ensure boolean type
           };
           resolve(settings);
         } else {
@@ -49,8 +50,8 @@ router.get('/settings', authenticateToken, async (req: Request, res: Response) =
       
       const settingsId = await new Promise<number>((resolve, reject) => {
         db.run(
-          'INSERT INTO user_settings (user_id, selected_languages, skip_button_enabled, auto_insert_enabled) VALUES (?, ?, ?, ?)',
-          [userId, JSON.stringify(defaultLanguages), 0, 0], // Default both settings to false (0)
+          'INSERT INTO user_settings (user_id, selected_languages, skip_button_enabled, auto_insert_enabled, help_button_enabled) VALUES (?, ?, ?, ?, ?)',
+          [userId, JSON.stringify(defaultLanguages), 0, 0, 0], // Default all settings to false (0)
           function (err) {
             if (err) reject(err);
             else resolve(this.lastID);
@@ -81,7 +82,7 @@ router.put('/settings', authenticateToken, async (req: Request, res: Response) =
     }
 
     const userId = req.user.id;
-    const { selected_languages, skip_button_enabled, auto_insert_enabled }: UpdateUserSettingsRequest = req.body;
+    const { selected_languages, skip_button_enabled, auto_insert_enabled, help_button_enabled }: UpdateUserSettingsRequest = req.body;
 
     // Validate input
     if (!selected_languages || !Array.isArray(selected_languages)) {
@@ -109,13 +110,14 @@ router.put('/settings', authenticateToken, async (req: Request, res: Response) =
     // Prepare the skip_button_enabled value (default to false if not provided)
     const skipButtonEnabled = skip_button_enabled !== undefined ? (skip_button_enabled ? 1 : 0) : 0;
     const autoInsertEnabled = auto_insert_enabled !== undefined ? (auto_insert_enabled ? 1 : 0) : 0;
+    const helpButtonEnabled = help_button_enabled !== undefined ? (help_button_enabled ? 1 : 0) : 0;
 
     if (existingSettings) {
       // Update existing settings
       await new Promise<void>((resolve, reject) => {
         db.run(
-          'UPDATE user_settings SET selected_languages = ?, skip_button_enabled = ?, auto_insert_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-          [JSON.stringify(selected_languages), skipButtonEnabled, autoInsertEnabled, userId],
+          'UPDATE user_settings SET selected_languages = ?, skip_button_enabled = ?, auto_insert_enabled = ?, help_button_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+          [JSON.stringify(selected_languages), skipButtonEnabled, autoInsertEnabled, helpButtonEnabled, userId],
           (err) => {
             if (err) reject(err);
             else resolve();
@@ -126,8 +128,8 @@ router.put('/settings', authenticateToken, async (req: Request, res: Response) =
       // Create new settings
       await new Promise<void>((resolve, reject) => {
         db.run(
-          'INSERT INTO user_settings (user_id, selected_languages, skip_button_enabled, auto_insert_enabled) VALUES (?, ?, ?, ?)',
-          [userId, JSON.stringify(selected_languages), skipButtonEnabled, autoInsertEnabled],
+          'INSERT INTO user_settings (user_id, selected_languages, skip_button_enabled, auto_insert_enabled, help_button_enabled) VALUES (?, ?, ?, ?, ?)',
+          [userId, JSON.stringify(selected_languages), skipButtonEnabled, autoInsertEnabled, helpButtonEnabled],
           (err) => {
             if (err) reject(err);
             else resolve();

@@ -6,6 +6,7 @@ import { addSynonymsSupport } from './add-synonyms-support';
 import { addMasteredColumn } from './add-mastered-column';
 import { addSkipButtonSetting } from './add-skip-button-setting';
 import { addAutoInsertSetting } from './add-auto-insert-setting';
+import { addHelpButtonSetting } from './add-help-button-setting';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -177,6 +178,10 @@ export async function initializeDatabase(): Promise<void> {
               })
               .then(() => {
                 console.log('Auto-insert setting migration completed successfully');
+                return addHelpButtonSetting();
+              })
+              .then(() => {
+                console.log('Help button setting migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {

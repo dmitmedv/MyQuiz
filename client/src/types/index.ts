@@ -99,6 +99,7 @@ export interface UserSettings {
   selected_languages: string[]; // Array of language codes (e.g., ['english', 'spanish'])
   skip_button_enabled: boolean; // Whether the skip button is enabled in practice mode
   auto_insert_enabled: boolean; // Whether the auto-insert correct answer button is enabled in practice mode
+  help_button_enabled: boolean; // Whether the help button is enabled in practice mode
   created_at: string;
   updated_at: string;
 }
@@ -107,4 +108,5 @@ export interface UpdateUserSettingsRequest {
   selected_languages: string[];
   skip_button_enabled?: boolean; // Optional field for updating skip button setting
   auto_insert_enabled?: boolean; // Optional field for updating auto-insert setting
+  help_button_enabled?: boolean; // Optional field for updating help button setting
 } 

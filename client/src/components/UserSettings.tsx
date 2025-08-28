@@ -26,6 +26,7 @@ const UserSettings: React.FC = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [skipButtonEnabled, setSkipButtonEnabled] = useState<boolean>(false);
   const [autoInsertEnabled, setAutoInsertEnabled] = useState<boolean>(false);
+  const [helpButtonEnabled, setHelpButtonEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,7 @@ const UserSettings: React.FC = () => {
       setSelectedLanguages(userSettings.selected_languages);
       setSkipButtonEnabled(userSettings.skip_button_enabled);
       setAutoInsertEnabled(userSettings.auto_insert_enabled);
+      setHelpButtonEnabled(userSettings.help_button_enabled);
     } catch (err: any) {
       console.error('Error loading user settings:', err);
       setError('Failed to load language settings');
@@ -83,7 +85,8 @@ const UserSettings: React.FC = () => {
       const updatedSettings = await apiService.updateUserSettings({
         selected_languages: selectedLanguages,
         skip_button_enabled: skipButtonEnabled,
-        auto_insert_enabled: autoInsertEnabled
+        auto_insert_enabled: autoInsertEnabled,
+        help_button_enabled: helpButtonEnabled
       });
       
       setSettings(updatedSettings);
@@ -107,6 +110,7 @@ const UserSettings: React.FC = () => {
       setSelectedLanguages(settings.selected_languages);
       setSkipButtonEnabled(settings.skip_button_enabled);
       setAutoInsertEnabled(settings.auto_insert_enabled);
+      setHelpButtonEnabled(settings.help_button_enabled);
       setError(null);
       setSuccessMessage(null);
     }
@@ -115,7 +119,8 @@ const UserSettings: React.FC = () => {
   const hasUnsavedChanges = settings && (
     JSON.stringify(selectedLanguages.sort()) !== JSON.stringify(settings.selected_languages.sort()) ||
     skipButtonEnabled !== settings.skip_button_enabled ||
-    autoInsertEnabled !== settings.auto_insert_enabled
+    autoInsertEnabled !== settings.auto_insert_enabled ||
+    helpButtonEnabled !== settings.help_button_enabled
   );
 
   if (loading) {
@@ -248,6 +253,21 @@ const UserSettings: React.FC = () => {
                 </div>
               </div>
             </label>
+
+            <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={helpButtonEnabled}
+                onChange={(e) => setHelpButtonEnabled(e.target.checked)}
+                className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+              />
+              <div className="ml-3">
+                <div className="font-medium text-gray-900">Enable Help Button</div>
+                <div className="text-sm text-gray-600">
+                  Show a help button during practice sessions to get a hint by inserting the first letter of the correct answer
+                </div>
+              </div>
+            </label>
           </div>
         </div>
 
@@ -310,8 +330,10 @@ const UserSettings: React.FC = () => {
               <li>• When enabled, you'll see a skip button that moves to the next word without marking it as correct or wrong</li>
               <li>• <strong>Auto-insert button</strong> allows you to automatically fill in the correct answer during practice sessions</li>
               <li>• When enabled, you'll see an auto-insert button that fills the answer field with the correct translation</li>
+              <li>• <strong>Help button</strong> provides a gentle hint by inserting just the first letter of the correct answer</li>
+              <li>• When enabled, you'll see a help button that gives you a subtle nudge without giving away the full answer</li>
               <li>• These settings are useful for learning new words or reviewing challenging vocabulary</li>
-              <li>• Both settings can be changed anytime and take effect immediately</li>
+              <li>• All settings can be changed anytime and take effect immediately</li>
             </ul>
           </div>
         </div>

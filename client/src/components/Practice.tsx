@@ -67,6 +67,7 @@ const Practice: React.FC<PracticeProps> = ({
         selected_languages: [],
         skip_button_enabled: false,
         auto_insert_enabled: false,
+        help_button_enabled: false,
         created_at: '',
         updated_at: ''
       });
@@ -112,6 +113,26 @@ const Practice: React.FC<PracticeProps> = ({
       inputRef.current.focus();
       // Move cursor to end of text
       inputRef.current.setSelectionRange(correctAnswer.length, correctAnswer.length);
+    }
+  }, [currentWord, practiceMode]);
+
+  const handleHelp = useCallback(() => {
+    if (!currentWord) return;
+
+    // Get the correct answer based on practice mode
+    const correctAnswer = practiceMode === 'word-translation'
+      ? currentWord.translation
+      : currentWord.word;
+
+    // Insert just the first letter as a hint
+    const firstLetter = correctAnswer.charAt(0);
+    setUserAnswer(firstLetter);
+
+    // Focus the input field after inserting the hint
+    if (inputRef.current) {
+      inputRef.current.focus();
+      // Move cursor to end of text (after the first letter)
+      inputRef.current.setSelectionRange(1, 1);
     }
   }, [currentWord, practiceMode]);
 
@@ -326,6 +347,18 @@ const Practice: React.FC<PracticeProps> = ({
                     title="Auto-insert the correct answer"
                   >
                     🤖 Auto
+                  </button>
+                )}
+
+                {/* Help Button - only show if enabled in user settings */}
+                {userSettings?.help_button_enabled && (
+                  <button
+                    onClick={handleHelp}
+                    disabled={loading}
+                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Get a hint by inserting the first letter"
+                  >
+                    💡 Hint
                   </button>
                 )}
               </div>
