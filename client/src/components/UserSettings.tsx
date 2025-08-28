@@ -25,6 +25,7 @@ const UserSettings: React.FC = () => {
   const [settings, setSettings] = useState<UserSettingsType | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [skipButtonEnabled, setSkipButtonEnabled] = useState<boolean>(false);
+  const [autoInsertEnabled, setAutoInsertEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ const UserSettings: React.FC = () => {
       setSettings(userSettings);
       setSelectedLanguages(userSettings.selected_languages);
       setSkipButtonEnabled(userSettings.skip_button_enabled);
+      setAutoInsertEnabled(userSettings.auto_insert_enabled);
     } catch (err: any) {
       console.error('Error loading user settings:', err);
       setError('Failed to load language settings');
@@ -80,7 +82,8 @@ const UserSettings: React.FC = () => {
       
       const updatedSettings = await apiService.updateUserSettings({
         selected_languages: selectedLanguages,
-        skip_button_enabled: skipButtonEnabled
+        skip_button_enabled: skipButtonEnabled,
+        auto_insert_enabled: autoInsertEnabled
       });
       
       setSettings(updatedSettings);
@@ -103,6 +106,7 @@ const UserSettings: React.FC = () => {
     if (settings) {
       setSelectedLanguages(settings.selected_languages);
       setSkipButtonEnabled(settings.skip_button_enabled);
+      setAutoInsertEnabled(settings.auto_insert_enabled);
       setError(null);
       setSuccessMessage(null);
     }
@@ -110,7 +114,8 @@ const UserSettings: React.FC = () => {
 
   const hasUnsavedChanges = settings && (
     JSON.stringify(selectedLanguages.sort()) !== JSON.stringify(settings.selected_languages.sort()) ||
-    skipButtonEnabled !== settings.skip_button_enabled
+    skipButtonEnabled !== settings.skip_button_enabled ||
+    autoInsertEnabled !== settings.auto_insert_enabled
   );
 
   if (loading) {
@@ -228,6 +233,21 @@ const UserSettings: React.FC = () => {
                 </div>
               </div>
             </label>
+
+            <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={autoInsertEnabled}
+                onChange={(e) => setAutoInsertEnabled(e.target.checked)}
+                className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+              />
+              <div className="ml-3">
+                <div className="font-medium text-gray-900">Enable Auto-Insert Button</div>
+                <div className="text-sm text-gray-600">
+                  Show an auto-insert button during practice sessions to automatically fill in the correct answer
+                </div>
+              </div>
+            </label>
           </div>
         </div>
 
@@ -288,8 +308,10 @@ const UserSettings: React.FC = () => {
             <ul className="text-sm text-gray-700 space-y-1">
               <li>• <strong>Skip button</strong> allows you to skip difficult words or phrases during practice sessions</li>
               <li>• When enabled, you'll see a skip button that moves to the next word without marking it as correct or wrong</li>
-              <li>• This is useful for words you find particularly challenging or want to revisit later</li>
-              <li>• The skip button setting can be changed anytime and takes effect immediately</li>
+              <li>• <strong>Auto-insert button</strong> allows you to automatically fill in the correct answer during practice sessions</li>
+              <li>• When enabled, you'll see an auto-insert button that fills the answer field with the correct translation</li>
+              <li>• These settings are useful for learning new words or reviewing challenging vocabulary</li>
+              <li>• Both settings can be changed anytime and take effect immediately</li>
             </ul>
           </div>
         </div>

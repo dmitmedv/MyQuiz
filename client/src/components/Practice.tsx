@@ -66,6 +66,7 @@ const Practice: React.FC<PracticeProps> = ({
         user_id: 0,
         selected_languages: [],
         skip_button_enabled: false,
+        auto_insert_enabled: false,
         created_at: '',
         updated_at: ''
       });
@@ -95,6 +96,24 @@ const Practice: React.FC<PracticeProps> = ({
     // Simply move to the next word without checking the answer
     loadNewWord();
   }, [loadNewWord]);
+
+  const handleAutoInsert = useCallback(() => {
+    if (!currentWord) return;
+
+    // Fill the input with the correct answer based on practice mode
+    const correctAnswer = practiceMode === 'word-translation'
+      ? currentWord.translation
+      : currentWord.word;
+
+    setUserAnswer(correctAnswer);
+
+    // Focus the input field after auto-inserting
+    if (inputRef.current) {
+      inputRef.current.focus();
+      // Move cursor to end of text
+      inputRef.current.setSelectionRange(correctAnswer.length, correctAnswer.length);
+    }
+  }, [currentWord, practiceMode]);
 
   // Legacy key handler for input field - now handled globally
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -295,6 +314,18 @@ const Practice: React.FC<PracticeProps> = ({
                     title="Skip this word and move to the next one"
                   >
                     Skip
+                  </button>
+                )}
+
+                {/* Auto-Insert Button - only show if enabled in user settings */}
+                {userSettings?.auto_insert_enabled && (
+                  <button
+                    onClick={handleAutoInsert}
+                    disabled={loading}
+                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Auto-insert the correct answer"
+                  >
+                    🤖 Auto
                   </button>
                 )}
               </div>

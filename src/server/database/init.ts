@@ -5,6 +5,7 @@ import { addTranslationLanguageColumn } from './add-translation-language';
 import { addSynonymsSupport } from './add-synonyms-support';
 import { addMasteredColumn } from './add-mastered-column';
 import { addSkipButtonSetting } from './add-skip-button-setting';
+import { addAutoInsertSetting } from './add-auto-insert-setting';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -172,6 +173,10 @@ export async function initializeDatabase(): Promise<void> {
               })
               .then(() => {
                 console.log('Skip button setting migration completed successfully');
+                return addAutoInsertSetting();
+              })
+              .then(() => {
+                console.log('Auto-insert setting migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {
