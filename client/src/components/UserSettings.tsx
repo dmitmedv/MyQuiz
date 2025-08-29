@@ -264,7 +264,7 @@ const UserSettings: React.FC = () => {
               <div className="ml-3">
                 <div className="font-medium text-gray-900">Enable Help Button</div>
                 <div className="text-sm text-gray-600">
-                  Show a help button during practice sessions to get a hint by inserting the first letter of the correct answer
+                  Show a help button during practice sessions to get progressive hints by revealing one letter at a time with each click
                 </div>
               </div>
             </label>
@@ -330,8 +330,8 @@ const UserSettings: React.FC = () => {
               <li>• When enabled, you'll see a skip button that moves to the next word without marking it as correct or wrong</li>
               <li>• <strong>Auto-insert button</strong> allows you to automatically fill in the correct answer during practice sessions</li>
               <li>• When enabled, you'll see an auto-insert button that fills the answer field with the correct translation</li>
-              <li>• <strong>Help button</strong> provides a gentle hint by inserting just the first letter of the correct answer</li>
-              <li>• When enabled, you'll see a help button that gives you a subtle nudge without giving away the full answer</li>
+              <li>• <strong>Help button</strong> provides progressive hints by revealing one letter at a time with each click</li>
+              <li>• When enabled, you'll see a help button that gradually reveals more letters as you click it</li>
               <li>• These settings are useful for learning new words or reviewing challenging vocabulary</li>
               <li>• All settings can be changed anytime and take effect immediately</li>
             </ul>

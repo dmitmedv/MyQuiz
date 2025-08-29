@@ -20,6 +20,7 @@ const Practice: React.FC<PracticeProps> = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('word-translation');
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [hintProgress, setHintProgress] = useState<number>(0); // Track how many letters have been revealed
 
   // Use prop language if provided, otherwise use internal state
   const [internalSelectedLanguage, setInternalSelectedLanguage] = useState<string>('all');
@@ -37,6 +38,7 @@ const Practice: React.FC<PracticeProps> = ({
       setIsCompleted(false);
       setResult(null);
       setUserAnswer('');
+      setHintProgress(0); // Reset hint progress for new word
 
       const word = await apiService.getPracticeWord(practiceMode, selectedLanguage);
       setCurrentWord(word);
@@ -124,17 +126,20 @@ const Practice: React.FC<PracticeProps> = ({
       ? currentWord.translation
       : currentWord.word;
 
-    // Insert just the first letter as a hint
-    const firstLetter = correctAnswer.charAt(0);
-    setUserAnswer(firstLetter);
+    // Increment hint progress and get the next set of letters
+    const newHintProgress = hintProgress + 1;
+    const hintLetters = correctAnswer.substring(0, newHintProgress);
+
+    setUserAnswer(hintLetters);
+    setHintProgress(newHintProgress);
 
     // Focus the input field after inserting the hint
     if (inputRef.current) {
       inputRef.current.focus();
-      // Move cursor to end of text (after the first letter)
-      inputRef.current.setSelectionRange(1, 1);
+      // Move cursor to end of the inserted hint letters
+      inputRef.current.setSelectionRange(newHintProgress, newHintProgress);
     }
-  }, [currentWord, practiceMode]);
+  }, [currentWord, practiceMode, hintProgress]);
 
   // Legacy key handler for input field - now handled globally
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -356,9 +361,9 @@ const Practice: React.FC<PracticeProps> = ({
                     onClick={handleHelp}
                     disabled={loading}
                     className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Get a hint by inserting the first letter"
+                    title={hintProgress > 0 ? `Get next letter hint (${hintProgress} letters shown)` : "Get a hint by inserting the first letter"}
                   >
-                    💡 Hint
+                    💡 Hint{hintProgress > 0 ? ` (${hintProgress})` : ''}
                   </button>
                 )}
               </div>
