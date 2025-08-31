@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PracticeSession, PracticeResult, PracticeMode, UserSettings } from '../types';
+import { PracticeSession, PracticeResult, PracticeMode, UserSettings, WordDifference } from '../types';
 import { apiService } from '../services/api';
 import { getLanguageFlag } from '../utils/flags';
 
@@ -7,6 +7,40 @@ interface PracticeProps {
   selectedLanguage?: string;
   onLanguageChange?: (language: string) => void;
 }
+
+/**
+ * Component to render user answer with highlighted incorrect words
+ */
+const HighlightedAnswer: React.FC<{ 
+  userAnswer: string; 
+  wordDifferences?: WordDifference[] 
+}> = ({ userAnswer, wordDifferences }) => {
+  // If no word differences provided, just show the plain answer
+  if (!wordDifferences || wordDifferences.length === 0) {
+    return <span className="font-medium">{userAnswer}</span>;
+  }
+
+  return (
+    <span className="font-medium">
+      {wordDifferences.map((diff, index) => (
+        <span
+          key={index}
+          className={diff.isCorrect 
+            ? 'text-green-700' // Correct words in green
+            : 'bg-red-100 text-red-800 px-1 rounded' // Incorrect words highlighted in red
+          }
+          title={!diff.isCorrect && diff.correctWord 
+            ? `Should be: ${diff.correctWord}` 
+            : undefined}
+        >
+          {diff.word}
+          {/* Add space after each word except the last one */}
+          {index < wordDifferences.length - 1 && ' '}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 const Practice: React.FC<PracticeProps> = ({
   selectedLanguage: propSelectedLanguage,
@@ -406,7 +440,10 @@ const Practice: React.FC<PracticeProps> = ({
                   {result.correct ? 'Correct!' : 'Incorrect'}
                 </h4>
                 <p className="text-gray-600 mb-2">
-                  Your answer: <span className="font-medium">{result.userTranslation}</span>
+                  Your answer: <HighlightedAnswer 
+                    userAnswer={result.userTranslation} 
+                    wordDifferences={result.wordDifferences} 
+                  />
                 </p>
                 {!result.correct && (
                   <div className="space-y-1">

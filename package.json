@@ -27,14 +27,17 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "sqlite3": "^5.1.6",
-    "typescript": "^4.9.5"
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.17.1",
     "concurrently": "^8.2.2",
+    "jest": "^30.1.1",
     "nodemon": "^3.0.1",
-    "ts-node": "^10.9.1"
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.9.2"
   },
   "keywords": [
     "quiz",

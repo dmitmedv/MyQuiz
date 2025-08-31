@@ -69,12 +69,21 @@ export interface PracticeSession {
   synonyms?: string[]; // Additional synonyms/alternative translations
 }
 
+// Represents a word with its correctness status for highlighting
+export interface WordDifference {
+  word: string;           // Original word from user input
+  isCorrect: boolean;     // Whether this word is correct
+  correctWord?: string;   // What the correct word should be (if different)
+  position: number;       // Position in the user's answer
+}
+
 export interface PracticeResult {
   correct: boolean;
   expectedTranslation: string;
   userTranslation: string;
   originalAnswer?: string; // The original answer with diacriticals (only included if different from expectedTranslation)
   synonyms?: string[]; // All possible synonyms/alternative translations (only included when answer is incorrect)
+  wordDifferences?: WordDifference[]; // Word-level differences for highlighting incorrect words
 }
 
 export interface PracticeStats {

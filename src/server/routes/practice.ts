@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../database/init';
 import { PracticeSession, PracticeResult, PracticeMode } from '../types';
 import { authenticateToken } from '../middleware/auth';
+import { compareWithMultipleAnswers } from '../utils/wordComparison';
 
 /**
  * Normalize text by removing diacritical marks to allow flexible matching
@@ -180,39 +181,32 @@ router.post('/check', async (req, res) => {
         expectedAnswer = row.word;
       }
 
-      // Check if user's answer matches any of the possible answers
-      // Use normalized comparison to handle diacritical marks (z ↔ ž, etc.)
-      let isCorrect = false;
-      let matchedAnswer = '';
+      // Use the new word comparison function to check answers and get word-level differences
+      const comparisonResult = compareWithMultipleAnswers(userTranslation, possibleAnswers);
       
-      for (const answer of possibleAnswers) {
-        if (normalizeText(answer) === normalizeText(userTranslation)) {
-          isCorrect = true;
-          matchedAnswer = answer;
-          break;
-        }
-      }
-
       // Check if the matched answer differs from normalized versions for diacriticals display
-      const shouldShowOriginal = isCorrect && 
-        normalizeText(matchedAnswer) !== matchedAnswer && 
-        normalizeText(userTranslation) !== matchedAnswer;
+      const shouldShowOriginal = comparisonResult.isCorrect && 
+        comparisonResult.matchedAnswer &&
+        normalizeText(comparisonResult.matchedAnswer) !== comparisonResult.matchedAnswer && 
+        normalizeText(userTranslation) !== comparisonResult.matchedAnswer;
 
       const result: PracticeResult = {
-        correct: isCorrect,
+        correct: comparisonResult.isCorrect,
         expectedTranslation: expectedAnswer,
         userTranslation: userTranslation,
         // Only include originalAnswer if it contains diacriticals and differs from user input
-        ...(shouldShowOriginal && { originalAnswer: matchedAnswer }),
+        ...(shouldShowOriginal && { originalAnswer: comparisonResult.matchedAnswer }),
         // Include all synonyms when answer is incorrect to show user all possible correct answers
-        ...(!isCorrect && { synonyms: possibleAnswers.filter(answer => answer !== expectedAnswer) })
+        ...(!comparisonResult.isCorrect && { synonyms: possibleAnswers.filter(answer => answer !== expectedAnswer) }),
+        // Include word-level differences for highlighting when answer is incorrect
+        ...(!comparisonResult.isCorrect && comparisonResult.wordDifferences.length > 0 && { wordDifferences: comparisonResult.wordDifferences })
       };
 
       // Update attempt counts and mark as learned if correct
       let updateQuery: string;
       let updateParams: any[];
 
-      if (isCorrect) {
+      if (comparisonResult.isCorrect) {
         // Increment correct attempts and mark as learned
         updateQuery = `
           UPDATE vocabulary 
