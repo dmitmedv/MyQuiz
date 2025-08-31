@@ -141,6 +141,26 @@ const Practice: React.FC<PracticeProps> = ({
     }
   }, [currentWord, practiceMode, hintProgress]);
 
+  // Handle marking a word as mastered
+  const handleMastered = useCallback(async () => {
+    if (!currentWord) return;
+
+    try {
+      setLoading(true);
+      // Update the word to be mastered
+      await apiService.updateVocabularyItem(currentWord.id, {
+        mastered: true
+      });
+      // Move to the next word after marking as mastered
+      loadNewWord();
+    } catch (err) {
+      setError('Failed to mark word as mastered');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentWord, loadNewWord]);
+
   // Legacy key handler for input field - now handled globally
   const handleKeyPress = (e: React.KeyboardEvent) => {
     // This is now handled by the global key listener, but keeping for input-specific behavior if needed
@@ -367,6 +387,8 @@ const Practice: React.FC<PracticeProps> = ({
                   </button>
                 )}
               </div>
+
+
             </div>
           ) : (
             <div className="space-y-4">
@@ -419,10 +441,18 @@ const Practice: React.FC<PracticeProps> = ({
         </div>
       )}
 
-      {/* Mode Selection - Moved below and made smaller */}
+      {/* Mode Selection and Mastered Button */}
       <div className="card mt-6 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900">Practice Mode</h3>
+          {/* Mastered Button - replaces Practice Mode text */}
+          <button
+            onClick={handleMastered}
+            disabled={loading || !currentWord}
+            className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm"
+            title="Mark this word as permanently mastered"
+          >
+            ⭐ Mastered
+          </button>
           <div className="flex items-center space-x-2">
             <span className={`text-xs ${practiceMode === 'word-translation' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
               Word → Translation
