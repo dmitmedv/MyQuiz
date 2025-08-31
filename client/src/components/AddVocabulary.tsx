@@ -15,6 +15,7 @@ const AddVocabulary: React.FC = () => {
   const [duplicateDetails, setDuplicateDetails] = useState<string | null>(null);
   const [existingWord, setExistingWord] = useState<{ word: string; translation: string } | null>(null);
   const [userLanguages, setUserLanguages] = useState<Language[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // All available languages with their flags
   const ALL_LANGUAGES = [
@@ -163,14 +164,21 @@ const AddVocabulary: React.FC = () => {
         synonyms: synonyms.length > 0 ? synonyms : undefined // Only include synonyms if there are any
       });
       
-      // Reset form and redirect to vocabulary list - keep current language settings
+      // Reset form to add another word - keep current language settings
       setForm(prev => ({ ...prev, word: '', translation: '' }));
       setSynonyms([]);
       setCurrentSynonym('');
       setError(null);
       setDuplicateDetails(null);
       setExistingWord(null);
-      navigate('/');
+
+      // Show success message for 0.5 seconds
+      setSuccessMessage('Added!');
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 1000);
+
+      // Stay on add word page for convenience
     } catch (err: any) {
       // Handle different types of errors with more specific messages
       if (err.message && err.message.includes('already exists')) {
@@ -205,7 +213,7 @@ const AddVocabulary: React.FC = () => {
       // Debounce the check to avoid too many API calls
       setTimeout(() => {
         checkExistingWord(wordToCheck, languageToCheck);
-      }, 500);
+      }, 1000);
     }
   };
 
@@ -218,6 +226,12 @@ const AddVocabulary: React.FC = () => {
 
       <div className="card">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+              <div className="font-medium">✓ {successMessage}</div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg">
               <div className="font-medium">{error}</div>
