@@ -402,57 +402,65 @@ const Practice: React.FC<PracticeProps> = ({
               />
 
                             {/* Button Row - Check Answer and Skip (if enabled) */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCheckAnswer}
-                  disabled={loading || !userAnswer.trim()}
-                  className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Checking...
-                    </div>
-                  ) : (
-                    'Check Answer'
+              {/* Mobile: Two-column layout with primary buttons on the right */}
+              <div className="md:flex md:gap-3 flex-col sm:flex-row gap-2">
+                {/* Left column on mobile - secondary buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                  {/* Skip Button - only show if enabled in user settings */}
+                  {userSettings?.skip_button_enabled && (
+                    <button
+                      onClick={handleSkipWord}
+                      disabled={loading}
+                      className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Skip this word and move to the next one"
+                    >
+                      Skip
+                    </button>
                   )}
-                </button>
 
-                {/* Skip Button - only show if enabled in user settings */}
-                {userSettings?.skip_button_enabled && (
-                  <button
-                    onClick={handleSkipWord}
-                    disabled={loading}
-                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Skip this word and move to the next one"
-                  >
-                    Skip
-                  </button>
-                )}
+                  {/* Help Button - only show if enabled in user settings */}
+                  {userSettings?.help_button_enabled && (
+                    <button
+                      onClick={handleHelp}
+                      disabled={loading}
+                      className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={hintProgress > 0 ? `Get next letter hint (${hintProgress} letters shown)` : "Get a hint by inserting the first letter"}
+                    >
+                      💡 Hint{hintProgress > 0 ? ` (${hintProgress})` : ''}
+                    </button>
+                  )}
+                </div>
 
-                {/* Auto-Insert Button - only show if enabled in user settings */}
-                {userSettings?.auto_insert_enabled && (
+                {/* Right column on mobile - primary buttons */}
+                <div className="flex flex-col gap-2 sm:w-auto">
+                  {/* Check Answer Button - primary action */}
                   <button
-                    onClick={handleAutoInsert}
-                    disabled={loading}
-                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Auto-insert the correct answer"
+                    onClick={handleCheckAnswer}
+                    disabled={loading || !userAnswer.trim()}
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    🤖 Auto
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Checking...
+                      </div>
+                    ) : (
+                      'Check Answer'
+                    )}
                   </button>
-                )}
 
-                {/* Help Button - only show if enabled in user settings */}
-                {userSettings?.help_button_enabled && (
-                  <button
-                    onClick={handleHelp}
-                    disabled={loading}
-                    className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={hintProgress > 0 ? `Get next letter hint (${hintProgress} letters shown)` : "Get a hint by inserting the first letter"}
-                  >
-                    💡 Hint{hintProgress > 0 ? ` (${hintProgress})` : ''}
-                  </button>
-                )}
+                  {/* Auto-Insert Button - only show if enabled in user settings */}
+                  {userSettings?.auto_insert_enabled && (
+                    <button
+                      onClick={handleAutoInsert}
+                      disabled={loading}
+                      className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Auto-insert the correct answer"
+                    >
+                      🤖 Auto
+                    </button>
+                  )}
+                </div>
               </div>
 
 
