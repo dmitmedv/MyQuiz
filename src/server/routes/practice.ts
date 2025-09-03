@@ -243,10 +243,12 @@ router.post('/check', async (req, res) => {
 });
 
 // Get practice statistics for the authenticated user
+// Optionally filter by language if language parameter is provided
 router.get('/stats', (req, res) => {
   const userId = req.user!.id;
-  
-  const statsQuery = `
+  const language = req.query.language as string;
+
+  let statsQuery = `
     SELECT
       COUNT(*) as total,
       SUM(CASE WHEN learned = 1 THEN 1 ELSE 0 END) as learned,
@@ -257,8 +259,15 @@ router.get('/stats', (req, res) => {
     FROM vocabulary
     WHERE user_id = ?
   `;
+  let queryParams: any[] = [userId];
 
-  db.get(statsQuery, [userId], (err, row: {
+  // Add language filter if specified
+  if (language && language !== 'all') {
+    statsQuery += ' AND language = ?';
+    queryParams.push(language);
+  }
+
+  db.get(statsQuery, queryParams, (err, row: {
     total: number;
     learned: number;
     mastered: number;

@@ -122,8 +122,13 @@ class ApiService {
     return response.json();
   }
 
-  async getPracticeStats(): Promise<PracticeStats> {
-    const response = await fetch(`${API_BASE}/practice/stats`, {
+  async getPracticeStats(language?: string): Promise<PracticeStats> {
+    const params = new URLSearchParams();
+    if (language && language !== 'all') {
+      params.append('language', language);
+    }
+
+    const response = await fetch(`${API_BASE}/practice/stats?${params.toString()}`, {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {

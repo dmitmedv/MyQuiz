@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { PracticeSession, PracticeResult, PracticeMode, UserSettings, WordDifference } from '../types';
+import { PracticeSession, PracticeResult, PracticeMode, UserSettings, WordDifference, PracticeStats } from '../types';
 import { apiService } from '../services/api';
 import { getLanguageFlag } from '../utils/flags';
 
@@ -55,6 +55,8 @@ const Practice: React.FC<PracticeProps> = ({
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('word-translation');
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [hintProgress, setHintProgress] = useState<number>(0); // Track how many letters have been revealed
+  const [practiceStats, setPracticeStats] = useState<PracticeStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Use prop language if provided, otherwise use internal state
   const [internalSelectedLanguage, setInternalSelectedLanguage] = useState<string>('all');
@@ -110,6 +112,28 @@ const Practice: React.FC<PracticeProps> = ({
     }
   }, []);
 
+  const loadPracticeStats = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await apiService.getPracticeStats(selectedLanguage);
+      setPracticeStats(stats);
+    } catch (err) {
+      console.error('Failed to load practice stats:', err);
+      // Set default stats if loading fails
+      setPracticeStats({
+        total: 0,
+        learned: 0,
+        mastered: 0,
+        unlearned: 0,
+        progress: 0,
+        total_correct_attempts: 0,
+        total_wrong_attempts: 0
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [selectedLanguage]);
+
   const handleCheckAnswer = useCallback(async () => {
     if (!currentWord || !userAnswer.trim()) return;
 
@@ -127,12 +151,14 @@ const Practice: React.FC<PracticeProps> = ({
 
   const handleNextWord = useCallback(() => {
     loadNewWord();
-  }, [loadNewWord]);
+    loadPracticeStats();
+  }, [loadNewWord, loadPracticeStats]);
 
   const handleSkipWord = useCallback(() => {
     // Simply move to the next word without checking the answer
     loadNewWord();
-  }, [loadNewWord]);
+    loadPracticeStats();
+  }, [loadNewWord, loadPracticeStats]);
 
   const handleAutoInsert = useCallback(() => {
     if (!currentWord) return;
@@ -187,13 +213,14 @@ const Practice: React.FC<PracticeProps> = ({
       });
       // Move to the next word after marking as mastered
       loadNewWord();
+      loadPracticeStats();
     } catch (err) {
       setError('Failed to mark word as mastered');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [currentWord, loadNewWord]);
+  }, [currentWord, loadNewWord, loadPracticeStats]);
 
   // Legacy key handler for input field - now handled globally
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -231,6 +258,11 @@ const Practice: React.FC<PracticeProps> = ({
   useEffect(() => {
     loadUserSettings();
   }, [loadUserSettings]);
+
+  // Load practice stats on mount and when selected language changes
+  useEffect(() => {
+    loadPracticeStats();
+  }, [loadPracticeStats, selectedLanguage]);
 
   // Initial load effect
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -282,12 +314,13 @@ const Practice: React.FC<PracticeProps> = ({
       await apiService.resetPractice(selectedLanguage);
       setIsCompleted(false);
       loadNewWord();
+      loadPracticeStats();
     } catch (err) {
       setError('Failed to reset practice');
       setIsCompleted(false);
       console.error(err);
     }
-  }, [selectedLanguage, loadNewWord]);
+  }, [selectedLanguage, loadNewWord, loadPracticeStats]);
 
   // Helper function to get the displayed text based on practice mode
   const getDisplayText = () => {
@@ -481,15 +514,34 @@ const Practice: React.FC<PracticeProps> = ({
       {/* Mode Selection and Mastered Button */}
       <div className="card mt-6 p-4">
         <div className="flex items-center justify-between">
-          {/* Mastered Button - replaces Practice Mode text */}
-          <button
-            onClick={handleMastered}
-            disabled={loading || !currentWord}
-            className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm"
-            title="Mark this word as permanently mastered"
-          >
-            ⭐ Mastered
-          </button>
+          {/* Left side - Mastered Button and Words Left */}
+          <div className="flex items-center space-x-3">
+            {/* Mastered Button - replaces Practice Mode text */}
+            <button
+              onClick={handleMastered}
+              disabled={loading || !currentWord}
+              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm"
+              title="Mark this word as permanently mastered"
+            >
+              ⭐ Mastered
+            </button>
+
+            {/* Words Left Button */}
+            <button
+              disabled={true}
+              className="bg-gray-200 text-gray-700 px-4 py-2 text-sm rounded-md border border-gray-300 cursor-default"
+              title="Number of words remaining to practice"
+            >
+              {statsLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-2"></div>
+                  Loading...
+                </div>
+              ) : (
+                `📚 ${practiceStats?.unlearned || 0} left`
+              )}
+            </button>
+          </div>
           <div className="flex items-center space-x-2">
             <span className={`text-xs ${practiceMode === 'word-translation' ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
               Word → Translation
