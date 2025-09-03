@@ -233,6 +233,23 @@ router.post('/check', async (req, res) => {
           // Still return the result even if updating fails
         }
         
+        // If the answer was incorrect, save the incorrect attempt details
+        if (!comparisonResult.isCorrect) {
+          const insertIncorrectAttemptQuery = `
+            INSERT INTO incorrect_attempts (vocabulary_id, user_id, incorrect_answer, expected_answer, practice_mode)
+            VALUES (?, ?, ?, ?, ?)
+          `;
+          
+          db.run(insertIncorrectAttemptQuery, [id, userId, userTranslation, expectedAnswer, practiceMode], (err) => {
+            if (err) {
+              console.error('Error saving incorrect attempt:', err);
+              // Don't fail the request if saving incorrect attempt fails
+            } else {
+              console.log('Incorrect attempt saved successfully');
+            }
+          });
+        }
+        
         res.json(result);
       });
     } catch (synonymError) {
@@ -289,6 +306,32 @@ router.get('/stats', (req, res) => {
       total_correct_attempts: row.total_correct_attempts || 0,
       total_wrong_attempts: row.total_wrong_attempts || 0
     });
+  });
+});
+
+// Get incorrect attempts for a specific vocabulary item
+router.get('/incorrect-attempts/:vocabularyId', (req, res) => {
+  const userId = req.user!.id;
+  const vocabularyId = parseInt(req.params.vocabularyId);
+
+  if (!vocabularyId || isNaN(vocabularyId)) {
+    return res.status(400).json({ error: 'Valid vocabulary ID is required' });
+  }
+
+  const query = `
+    SELECT id, vocabulary_id, user_id, incorrect_answer, expected_answer, practice_mode, attempted_at
+    FROM incorrect_attempts 
+    WHERE vocabulary_id = ? AND user_id = ? 
+    ORDER BY attempted_at DESC
+  `;
+
+  db.all(query, [vocabularyId, userId], (err, rows) => {
+    if (err) {
+      console.error('Error fetching incorrect attempts:', err);
+      return res.status(500).json({ error: 'Failed to fetch incorrect attempts' });
+    }
+
+    res.json(rows);
   });
 });
 

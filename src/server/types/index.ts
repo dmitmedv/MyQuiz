@@ -126,4 +126,14 @@ export interface UpdateUserSettingsRequest {
   skip_button_enabled?: boolean; // Optional field for updating skip button setting
   auto_insert_enabled?: boolean; // Optional field for updating auto-insert setting
   help_button_enabled?: boolean; // Optional field for updating help button setting
+}
+
+export interface IncorrectAttempt {
+  id: number;
+  vocabulary_id: number;
+  user_id: number;
+  incorrect_answer: string;
+  expected_answer: string;
+  practice_mode: PracticeMode;
+  attempted_at: string;
 } 

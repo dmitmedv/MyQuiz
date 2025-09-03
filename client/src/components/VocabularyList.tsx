@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VocabularyItem, PracticeStats } from '../types';
 import { apiService } from '../services/api';
 import { getLanguageFlag, getLanguageName } from '../utils/flags';
+import IncorrectAttemptsModal from './IncorrectAttemptsModal';
 
 const VocabularyList: React.FC = () => {
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
@@ -11,6 +12,8 @@ const VocabularyList: React.FC = () => {
   const [editForm, setEditForm] = useState({ word: '', translation: '', language: 'serbian' });
   const [editSynonyms, setEditSynonyms] = useState<string[]>([]);
   const [currentEditSynonym, setCurrentEditSynonym] = useState('');
+  const [showIncorrectAttemptsModal, setShowIncorrectAttemptsModal] = useState(false);
+  const [selectedVocabularyItem, setSelectedVocabularyItem] = useState<VocabularyItem | null>(null);
   const [stats, setStats] = useState<PracticeStats>({
     total: 0,
     learned: 0,
@@ -228,6 +231,16 @@ const VocabularyList: React.FC = () => {
       setError('Failed to update vocabulary item');
       console.error(err);
     }
+  };
+
+  const handleShowIncorrectAttempts = (item: VocabularyItem) => {
+    setSelectedVocabularyItem(item);
+    setShowIncorrectAttemptsModal(true);
+  };
+
+  const handleCloseIncorrectAttemptsModal = () => {
+    setShowIncorrectAttemptsModal(false);
+    setSelectedVocabularyItem(null);
   };
 
   if (loading) {
@@ -511,7 +524,18 @@ const VocabularyList: React.FC = () => {
                           <div className="flex flex-col space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-success-600 font-medium">✓ {item.correct_attempts || 0}</span>
-                              <span className="text-error-600 font-medium">✗ {item.wrong_attempts || 0}</span>
+                              {/* Make wrong attempts clickable if there are any */}
+                              {(item.wrong_attempts || 0) > 0 ? (
+                                <button
+                                  onClick={() => handleShowIncorrectAttempts(item)}
+                                  className="text-error-600 font-medium hover:text-error-800 hover:underline transition-colors cursor-pointer"
+                                  title="Click to see all incorrect attempts for this word"
+                                >
+                                  ✗ {item.wrong_attempts}
+                                </button>
+                              ) : (
+                                <span className="text-error-600 font-medium">✗ {item.wrong_attempts || 0}</span>
+                              )}
                             </div>
                             {((item.correct_attempts || 0) + (item.wrong_attempts || 0)) > 0 && (
                               <div className="text-xs text-gray-500">
@@ -587,6 +611,15 @@ const VocabularyList: React.FC = () => {
             )}
           </table>
         </div>
+      )}
+
+      {/* Incorrect Attempts Modal */}
+      {selectedVocabularyItem && (
+        <IncorrectAttemptsModal
+          isOpen={showIncorrectAttemptsModal}
+          onClose={handleCloseIncorrectAttemptsModal}
+          vocabularyItem={selectedVocabularyItem}
+        />
       )}
     </div>
   );

@@ -7,7 +7,8 @@ import {
   PracticeStats,
   PracticeMode,
   UserSettings,
-  UpdateUserSettingsRequest
+  UpdateUserSettingsRequest,
+  IncorrectAttempt
 } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
@@ -149,6 +150,16 @@ class ApiService {
     });
     if (!response.ok) {
       throw new Error('Failed to reset practice');
+    }
+    return response.json();
+  }
+
+  async getIncorrectAttempts(vocabularyId: number): Promise<IncorrectAttempt[]> {
+    const response = await fetch(`${API_BASE}/practice/incorrect-attempts/${vocabularyId}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch incorrect attempts');
     }
     return response.json();
   }

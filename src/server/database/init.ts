@@ -7,6 +7,7 @@ import { addMasteredColumn } from './add-mastered-column';
 import { addSkipButtonSetting } from './add-skip-button-setting';
 import { addAutoInsertSetting } from './add-auto-insert-setting';
 import { addHelpButtonSetting } from './add-help-button-setting';
+import { addIncorrectAttemptsTable } from './add-incorrect-attempts-table';
 
 const dbPath = process.env.NODE_ENV === 'production' 
   ? '/data/vocabulary.db'
@@ -182,6 +183,10 @@ export async function initializeDatabase(): Promise<void> {
               })
               .then(() => {
                 console.log('Help button setting migration completed successfully');
+                return addIncorrectAttemptsTable();
+              })
+              .then(() => {
+                console.log('Incorrect attempts table migration completed successfully');
                 resolve();
               })
               .catch((migrationErr) => {
